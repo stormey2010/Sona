@@ -126,6 +126,17 @@ def transcribe_remote(path: Path) -> str:
         return text or "(No speech detected.)"
     except SonaError:
         raise
+    except requests.HTTPError as exc:
+        detail = ""
+        if exc.response is not None:
+            try:
+                detail = str(exc.response.json().get("detail", ""))
+            except ValueError:
+                detail = exc.response.text.strip()
+        raise SonaError(
+            f"The STT server rejected the recording ({exc}). {detail}\n"
+            "Run ./sona-stt stt-status and ./sona-server logs on the server."
+        ) from exc
     except requests.RequestException as exc:
         raise SonaError(
             f"The STT server could not be reached or rejected the recording: {exc}\n"
