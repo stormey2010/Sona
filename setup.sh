@@ -64,7 +64,8 @@ echo ""
 has_key="$(value GROQ_API_KEY)"
 default_api="n"; [[ -z "$has_key" ]] && default_api="y"
 echo "${bold}2 / 2  Voice & AI${reset}"
-read -r -p "Configure API keys, voice, speaker, and system prompt? [${default_api^^}/${default_api,,}]: " configure
+if [[ "$default_api" == y ]]; then prompt="Configure voice & AI now? [Y/n]"; else prompt="Change voice & AI settings? [Enter = keep saved settings]"; fi
+read -r -p "$prompt: " configure
 configure="${configure:-$default_api}"
 if [[ "$configure" =~ ^[Yy]$ ]]; then ./api_setup.sh; else echo "  ${dim}Keeping saved AI settings.${reset}"; fi
 echo ""

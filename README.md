@@ -123,6 +123,8 @@ The setup identifies each service before requesting its key: Groq for STT/TTS, C
 
 The system prompt is asked during guided setup. To edit it later, run `./sona-stt prompt`; leave API-key prompts blank to retain their existing values, then enter the replacement system prompt. Sona stores the most recent eight user messages and eight assistant responses in `recordings/conversation.json`, which is sent with later requests as short-term conversation history. Delete that file to clear the conversation.
 
+Use `./sona-stt speaker-test` to play a short tone through the selected speaker. This tests output separately from the microphone and AI services.
+
 Keep the server on your trusted LAN. The simple server intentionally has no authentication and should not be exposed to the public internet or port-forwarded.
 
 ## How microphone selection works
