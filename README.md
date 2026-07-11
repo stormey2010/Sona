@@ -125,7 +125,7 @@ The system prompt is asked during guided setup. To edit it later, run `./sona-st
 
 Use `./sona-stt speaker-test` to play a short tone through the selected speaker. This tests output separately from the microphone and AI services.
 
-Run one assistant conversation manually with `./sona-stt assistant`. Run the wake-word listener in the current SSH session with `./sona-stt wakeword`. If start-on-reboot is enabled in setup, Docker starts Sona's wake-word assistant automatically whenever the Pi and Docker restart; check it with `./sona-stt logs` and disable it by running setup again and choosing `n` at the final step.
+Run one assistant conversation manually with `./sona-stt assistant`. Run the wake-word listener in the current SSH session with `./sona-stt wakeword`. If start-on-reboot is enabled in setup, Docker starts Sona's wake-word assistant automatically whenever the Pi and Docker restart; check it with `./sona-stt logs` and disable it by running setup again and choosing `n` at the final step. Because the background listener owns the microphone, stop it before a manual test with `./sona-stt stop`, run `./sona-stt assistant`, then restore autostart with `./sona-stt start`.
 
 Keep the server on your trusted LAN. The simple server intentionally has no authentication and should not be exposed to the public internet or port-forwarded.
 
