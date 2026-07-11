@@ -108,6 +108,8 @@ STT_AUDIO_DEVICE=plughw:CARD=Array,DEV=0
 
 in a local `.env` file, along with the host `audio` group ID. The Compose file passes `/dev/snd` into the container and adds that audio group; it does **not** use privileged Docker mode.
 
+Setup also records your numeric Linux user and group IDs. The container uses those IDs, which lets its non-root process save WAV files to the local `recordings/` directory without weakening the directory permissions.
+
 Sona prefers the ALSA card identifier (`CARD=Array`) over a numeric card number (`hw:3,0`). USB audio card numbers can change after a reboot or when devices are unplugged; the card identifier is usually stable. If the card identifier itself changes or the microphone disappears, run:
 
 ```bash
@@ -222,4 +224,3 @@ sona-stt/
 ```
 
 `.env`, recordings, downloaded models, and Python caches are intentionally excluded from Git.
-

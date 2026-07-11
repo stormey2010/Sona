@@ -2,6 +2,9 @@ services:
   stt:
     build:
       context: .
+      args:
+        APP_UID: "${STT_UID:?Run ./setup.sh first to create .env}"
+        APP_GID: "${STT_GID:?Run ./setup.sh first to create .env}"
     image: sona-stt:local
     restart: unless-stopped
     env_file:
@@ -20,4 +23,3 @@ services:
 
 volumes:
   whisper-models:
-
