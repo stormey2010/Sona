@@ -9,7 +9,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .stt import SonaError, record, setting
+from .stt import SonaError, record_until_silence, setting
 
 FRAME_SAMPLES = 1280  # 80 ms at 16 kHz, as recommended by openWakeWord.
 
@@ -110,7 +110,7 @@ def listen() -> None:
             process.terminate()
             process.wait(timeout=3)
             from .assistant import respond
-            respond(record())
+            respond(record_until_silence())
             return
     except KeyboardInterrupt:
         print("\nWake-word listener stopped.")

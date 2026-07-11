@@ -109,7 +109,7 @@ If `docker` says permission is denied immediately after installing, substitute `
 
 ## API assistant setup
 
-First install and every `./sona-stt update` run one nine-step wizard: microphone, speaker plus optional test tone, Groq key, Cerebras key, Tavily key, TTS voice, system prompt, wake word, and start-on-reboot. Each setting gets its own clean terminal screen. Press Enter to keep only the current value and continue to the next screen. API keys are visible while being typed, but saved keys are never displayed afterward and `.env` remains excluded from Git.
+First install and every `./sona-stt update` run one ten-step wizard: microphone, end-of-speech silence time, speaker plus optional test tone, Groq key, Cerebras key, Tavily key, TTS voice, system prompt, wake word, and start-on-reboot. Each setting gets its own clean terminal screen. Press Enter to keep only the current value and continue to the next screen. API keys are visible while being typed, but saved keys are never displayed afterward and `.env` remains excluded from Git.
 
 On the Pi, select remote mode:
 
@@ -122,6 +122,8 @@ cd ~/sona-stt
 The setup identifies each service before requesting its key: Groq for STT/TTS, Cerebras for the LLM, and Tavily for web tools. Keys are saved only in ignored `.env`. Rotate any key that was pasted into a chat before entering it. Setup also offers Groq voices (`autumn`, `diana`, `hannah`, `austin`, `daniel`, `troy`) and detected ALSA speakers. `assistant` records, uses Groq STT, lets Cerebras answer with Tavily web tools when needed, then plays Groq TTS. Set `STT_BACKEND=local` in `.env` if you want tests to retain local Whisper.
 
 The system prompt is asked during guided setup. To edit it later, run `./sona-stt prompt`; leave API-key prompts blank to retain their existing values, then enter the replacement system prompt. Sona stores the most recent eight user messages and eight assistant responses in `recordings/conversation.json`, which is sent with later requests as short-term conversation history. Delete that file to clear the conversation.
+
+After wake-word detection, Sona records until you finish speaking instead of using a fixed five-second window. `STT_SILENCE_SECONDS` controls how long the microphone must remain quiet before recording stops (default `1.2`, configurable from `0.2` to `10` during setup). `STT_MAX_RECORD_SECONDS` provides a 30-second safety limit, and `STT_SPEECH_THRESHOLD` controls the audio level considered speech.
 
 Use `./sona-stt speaker-test` to play a short tone through the selected speaker. This tests output separately from the microphone and AI services.
 

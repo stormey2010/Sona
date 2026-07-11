@@ -16,7 +16,7 @@ screen
 echo "${bold}${cyan}Sona setup${reset}"
 echo "${dim}Press Enter to keep this setting and continue.${reset}"
 echo ""
-echo "${bold}1 / 9  Microphone${reset}"
+echo "${bold}1 / 10  Microphone${reset}"
 mapfile -t cards < <(arecord -l 2>/dev/null | sed -nE 's/^card ([0-9]+): ([^ ]+) \[([^]]+)\].*/\1|\2|\3/p')
 ((${#cards[@]})) || die "No microphone found. Connect one, then rerun ./sona-stt setup."
 default=1
@@ -30,6 +30,15 @@ read -r -p "Choose microphone [$default]: " choice || choice=""; choice="${choic
 IFS='|' read -r _ mic_id mic_name <<< "${cards[$((choice-1))]}"
 mic="plughw:CARD=${mic_id},DEV=0"
 
+screen
+echo "${bold}${cyan}Sona setup${reset}"
+echo "${bold}2 / 10  End-of-speech silence${reset}"
+echo "${dim}After you stop talking, Sona waits this long before sending your recording.${reset}"
+silence_seconds="$(value STT_SILENCE_SECONDS)"; silence_seconds="${silence_seconds:-1.2}"
+read -r -p "Silence seconds [$silence_seconds]: " silence_choice || silence_choice=""
+silence_seconds="${silence_choice:-$silence_seconds}"
+awk -v value="$silence_seconds" 'BEGIN{exit !(value >= 0.2 && value <= 10)}' || die "Choose a value from 0.2 to 10 seconds."
+
 audio_gid="$(getent group audio | awk -F: '{print $3}')"; [[ -n "$audio_gid" ]] || die "Could not read the host audio group."
 mkdir -p recordings
 [[ -w recordings ]] || sudo chown -R "$(id -u):$(id -g)" recordings
@@ -40,6 +49,9 @@ STT_AUDIO_DEVICE=${mic}
 STT_MODEL=$(value STT_MODEL)
 STT_LANGUAGE=$(value STT_LANGUAGE)
 STT_RECORD_SECONDS=$(value STT_RECORD_SECONDS)
+STT_SILENCE_SECONDS=${silence_seconds}
+STT_MAX_RECORD_SECONDS=$(value STT_MAX_RECORD_SECONDS)
+STT_SPEECH_THRESHOLD=$(value STT_SPEECH_THRESHOLD)
 AUDIO_GID=${audio_gid}
 STT_UID=$(id -u)
 STT_GID=$(id -g)
@@ -59,14 +71,14 @@ WAKEWORD_PRESET=$(value WAKEWORD_PRESET)
 WAKEWORD_CUSTOM_MODEL=$(value WAKEWORD_CUSTOM_MODEL)
 WAKEWORD_THRESHOLD=$(value WAKEWORD_THRESHOLD)
 EOF
-sed -i 's/^STT_MODEL=$/STT_MODEL=tiny.en/; s/^STT_LANGUAGE=$/STT_LANGUAGE=en/; s/^STT_RECORD_SECONDS=$/STT_RECORD_SECONDS=5/; s/^STT_BACKEND=$/STT_BACKEND=groq/; s/^GROQ_STT_MODEL=$/GROQ_STT_MODEL=whisper-large-v3-turbo/; s/^GROQ_TTS_MODEL=$/GROQ_TTS_MODEL=canopylabs\/orpheus-v1-english/; s/^CEREBRAS_MODEL=$/CEREBRAS_MODEL=gpt-oss-120b/; s/^SONA_AUTOSTART=$/SONA_AUTOSTART=false/; s/^WAKEWORD_MODE=$/WAKEWORD_MODE=preset/; s/^WAKEWORD_PRESET=$/WAKEWORD_PRESET=hey jarvis/; s/^WAKEWORD_THRESHOLD=$/WAKEWORD_THRESHOLD=0.5/' .env
+sed -i 's/^STT_MODEL=$/STT_MODEL=tiny.en/; s/^STT_LANGUAGE=$/STT_LANGUAGE=en/; s/^STT_RECORD_SECONDS=$/STT_RECORD_SECONDS=5/; s/^STT_MAX_RECORD_SECONDS=$/STT_MAX_RECORD_SECONDS=30/; s/^STT_SPEECH_THRESHOLD=$/STT_SPEECH_THRESHOLD=120/; s/^STT_BACKEND=$/STT_BACKEND=groq/; s/^GROQ_STT_MODEL=$/GROQ_STT_MODEL=whisper-large-v3-turbo/; s/^GROQ_TTS_MODEL=$/GROQ_TTS_MODEL=canopylabs\/orpheus-v1-english/; s/^CEREBRAS_MODEL=$/CEREBRAS_MODEL=gpt-oss-120b/; s/^SONA_AUTOSTART=$/SONA_AUTOSTART=false/; s/^WAKEWORD_MODE=$/WAKEWORD_MODE=preset/; s/^WAKEWORD_PRESET=$/WAKEWORD_PRESET=hey jarvis/; s/^WAKEWORD_THRESHOLD=$/WAKEWORD_THRESHOLD=0.5/' .env
 
 echo "  ${green}✓${reset} ${mic_name}"
 ./api_setup.sh
 ./wakeword_setup.sh
 screen
 echo "${bold}${cyan}Sona setup${reset}"
-echo "${bold}9 / 9  Start automatically${reset}"
+echo "${bold}10 / 10  Start automatically${reset}"
 current_start="$(awk -v k='SONA_AUTOSTART' 'index($0,k"=")==1{sub(/^[^=]*=/,""); print}' .env)"; current_start="${current_start:-false}"
 if [[ "$current_start" == true ]]; then start_default=Y; else start_default=N; fi
 read -r -p "Start Sona after every reboot? [$start_default]: " start_choice || start_choice=""
@@ -78,6 +90,7 @@ if [[ "$summary_mode" == custom ]]; then summary_wake="$(awk -v k='WAKEWORD_CUST
 echo "${green}${bold}✓ Sona setup complete${reset}"
 echo ""
 echo "  Microphone: ${mic_name}"
+echo "  Stop delay: ${silence_seconds}s of silence"
 echo "  Speaker:    ${summary_speaker}"
 echo "  Voice:      $(awk -v k='GROQ_TTS_VOICE' 'index($0,k"=")==1{sub(/^[^=]*=/,""); print}' .env)"
 echo "  Wake word:  ${summary_wake}"

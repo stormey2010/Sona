@@ -64,6 +64,68 @@ def record(seconds: int | None = None) -> Path:
     return target
 
 
+def record_until_silence() -> Path:
+    """Record after a wake word until speech is followed by configured silence."""
+    device = setting("STT_AUDIO_DEVICE")
+    silence_seconds = float(setting("STT_SILENCE_SECONDS", "1.2"))
+    max_seconds = float(setting("STT_MAX_RECORD_SECONDS", "30"))
+    threshold = int(setting("STT_SPEECH_THRESHOLD", "120"))
+    rate, chunk_ms = 16000, 100
+    chunk_bytes = rate * 2 * chunk_ms // 1000
+    silence_chunks_needed = max(1, round(silence_seconds * 1000 / chunk_ms))
+    max_chunks = max(1, round(max_seconds * 1000 / chunk_ms))
+    command = [
+        "arecord", "--device", device, "--format=S16_LE", "--channels=1",
+        "--rate=16000", "-t", "raw", "--quiet",
+    ]
+    print(f"Using microphone: {device}")
+    print(f"Speak now. Recording stops after {silence_seconds:g}s of silence...")
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    frames: list[bytes] = []
+    speech_started = False
+    silent_chunks = 0
+    try:
+        assert process.stdout is not None
+        for _ in range(max_chunks):
+            raw = process.stdout.read(chunk_bytes)
+            if len(raw) != chunk_bytes:
+                detail = process.stderr.read().decode(errors="replace").strip() if process.stderr else ""
+                raise SonaError(f"Microphone stream stopped unexpectedly: {detail}")
+            frames.append(raw)
+            level = audioop.rms(raw, 2)
+            if level >= threshold:
+                if not speech_started:
+                    print("Speech detected.")
+                speech_started = True
+                silent_chunks = 0
+            elif speech_started:
+                silent_chunks += 1
+                if silent_chunks >= silence_chunks_needed:
+                    break
+    finally:
+        if process.poll() is None:
+            process.terminate()
+            try:
+                process.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                process.kill()
+
+    if not speech_started:
+        raise SonaError(
+            "No speech was detected before the recording limit. Speak closer to the microphone, "
+            "or lower STT_SPEECH_THRESHOLD in .env."
+        )
+    target = recording_path()
+    with wave.open(str(target), "wb") as output:
+        output.setnchannels(1)
+        output.setsampwidth(2)
+        output.setframerate(rate)
+        output.writeframes(b"".join(frames))
+    validate_audio(target)
+    print(f"Recording complete: {target}")
+    return target
+
+
 def validate_audio(path: Path) -> None:
     try:
         with wave.open(str(path), "rb") as wav:

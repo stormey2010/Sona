@@ -7,7 +7,7 @@ get(){ awk -v k="$1" 'index($0,k"=")==1 {sub(/^[^=]*=/,""); v=$0} END{print v}' 
 current_mode="$(get WAKEWORD_MODE)"; current_preset="$(get WAKEWORD_PRESET)"; current_preset="${current_preset:-hey jarvis}"
 screen
 echo "Sona setup"
-echo "8 / 9  Wake word"
+echo "9 / 10  Wake word"
 echo "Wake word: ${current_mode:-preset} / ${current_preset}"
 echo "  Enter) keep saved   1) built-in preset   2) bundled Gideon/Nova   3) other model   0) off"
 read -r -p "Choose [Enter]: " mode || mode=""
