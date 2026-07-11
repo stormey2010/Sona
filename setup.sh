@@ -38,6 +38,12 @@ silence_seconds="$(value STT_SILENCE_SECONDS)"; silence_seconds="${silence_secon
 read -r -p "Silence seconds [$silence_seconds]: " silence_choice || silence_choice=""
 silence_seconds="${silence_choice:-$silence_seconds}"
 awk -v value="$silence_seconds" 'BEGIN{exit !(value >= 0.2 && value <= 10)}' || die "Choose a value from 0.2 to 10 seconds."
+noise_multiplier="$(value STT_NOISE_MULTIPLIER)"; noise_multiplier="${noise_multiplier:-2.0}"
+case "$noise_multiplier" in 1.5) noise_default=1;; 3.0) noise_default=3;; *) noise_default=2;; esac
+echo ""
+echo "Noise rejection: 1) sensitive  2) normal  3) strong"
+read -r -p "Choose [$noise_default]: " noise_choice || noise_choice=""; noise_choice="${noise_choice:-$noise_default}"
+case "$noise_choice" in 1) noise_multiplier=1.5;; 2) noise_multiplier=2.0;; 3) noise_multiplier=3.0;; *) die "Choose 1, 2, or 3.";; esac
 
 audio_gid="$(getent group audio | awk -F: '{print $3}')"; [[ -n "$audio_gid" ]] || die "Could not read the host audio group."
 mkdir -p recordings
@@ -52,6 +58,7 @@ STT_RECORD_SECONDS=$(value STT_RECORD_SECONDS)
 STT_SILENCE_SECONDS=${silence_seconds}
 STT_MAX_RECORD_SECONDS=$(value STT_MAX_RECORD_SECONDS)
 STT_SPEECH_THRESHOLD=$(value STT_SPEECH_THRESHOLD)
+STT_NOISE_MULTIPLIER=${noise_multiplier}
 AUDIO_GID=${audio_gid}
 STT_UID=$(id -u)
 STT_GID=$(id -g)
@@ -91,6 +98,7 @@ echo "${green}${bold}✓ Sona setup complete${reset}"
 echo ""
 echo "  Microphone: ${mic_name}"
 echo "  Stop delay: ${silence_seconds}s of silence"
+echo "  Noise mode:  $([[ "$noise_multiplier" == 3.0 ]] && echo strong || ([[ "$noise_multiplier" == 1.5 ]] && echo sensitive || echo normal))"
 echo "  Speaker:    ${summary_speaker}"
 echo "  Voice:      $(awk -v k='GROQ_TTS_VOICE' 'index($0,k"=")==1{sub(/^[^=]*=/,""); print}' .env)"
 echo "  Wake word:  ${summary_wake}"

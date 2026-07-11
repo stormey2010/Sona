@@ -64,12 +64,14 @@ def record(seconds: int | None = None) -> Path:
     return target
 
 
-def record_until_silence() -> Path:
+def record_until_silence(noise_floor: int | None = None) -> Path:
     """Record after a wake word until speech is followed by configured silence."""
     device = setting("STT_AUDIO_DEVICE")
     silence_seconds = float(setting("STT_SILENCE_SECONDS", "1.2"))
     max_seconds = float(setting("STT_MAX_RECORD_SECONDS", "30"))
-    threshold = int(setting("STT_SPEECH_THRESHOLD", "120"))
+    minimum_threshold = int(setting("STT_SPEECH_THRESHOLD", "120"))
+    noise_multiplier = float(setting("STT_NOISE_MULTIPLIER", "2.0"))
+    threshold = max(minimum_threshold, round((noise_floor or 0) * noise_multiplier))
     rate, chunk_ms = 16000, 100
     chunk_bytes = rate * 2 * chunk_ms // 1000
     silence_chunks_needed = max(1, round(silence_seconds * 1000 / chunk_ms))
@@ -80,6 +82,8 @@ def record_until_silence() -> Path:
     ]
     print(f"Using microphone: {device}")
     print(f"Speak now. Recording stops after {silence_seconds:g}s of silence...")
+    if noise_floor:
+        print(f"Adaptive noise floor: {noise_floor}; speech threshold: {threshold}")
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     frames: list[bytes] = []
     speech_started = False
@@ -113,7 +117,7 @@ def record_until_silence() -> Path:
     if not speech_started:
         raise SonaError(
             "No speech was detected before the recording limit. Speak closer to the microphone, "
-            "or lower STT_SPEECH_THRESHOLD in .env."
+            "or choose a more sensitive noise setting in setup."
         )
     target = recording_path()
     with wave.open(str(target), "wb") as output:

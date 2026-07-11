@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import audioop
 import shutil
 import subprocess
 import sys
@@ -94,6 +95,7 @@ def listen() -> None:
     print(f"Listening for: {name} (threshold {threshold:g})")
     print("Say the wake word, then speak your command after it. Press Ctrl+C to stop.\n")
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    recent_levels: list[int] = []
     try:
         assert process.stdout is not None
         while True:
@@ -101,16 +103,21 @@ def listen() -> None:
             if len(raw) != FRAME_SAMPLES * 2:
                 error = process.stderr.read().decode(errors="replace").strip() if process.stderr else ""
                 raise SonaError(f"Microphone stream stopped unexpectedly. {error}")
+            recent_levels.append(audioop.rms(raw, 2))
+            if len(recent_levels) > 60:
+                recent_levels.pop(0)
             scores = detector.predict(np.frombuffer(raw, dtype=np.int16))
             detected = [(label, score) for label, score in scores.items() if float(score) >= threshold]
             if not detected:
                 continue
             label, score = max(detected, key=lambda item: float(item[1]))
             print(f"Wake word detected: {label} ({float(score):.2f})")
+            ordered_levels = sorted(recent_levels)
+            noise_floor = ordered_levels[max(0, len(ordered_levels) // 5)] if ordered_levels else None
             process.terminate()
             process.wait(timeout=3)
             from .assistant import respond
-            respond(record_until_silence())
+            respond(record_until_silence(noise_floor=noise_floor))
             return
     except KeyboardInterrupt:
         print("\nWake-word listener stopped.")
