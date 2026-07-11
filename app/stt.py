@@ -46,6 +46,11 @@ def record(seconds: int | None = None) -> Path:
         raise SonaError("arecord could not be started.") from exc
     except subprocess.CalledProcessError as exc:
         detail = exc.stderr.strip()
+        if "Permission denied" in detail and "/app/recordings" in detail:
+            raise SonaError(
+                "The recordings directory is not writable by the container.\n"
+                "Run ./sona-stt setup to repair it, then run ./sona-stt update to rebuild the image."
+            ) from exc
         raise SonaError(
             "Recording failed. The selected ALSA device may be disconnected, unsupported, or inaccessible.\n"
             f"arecord said: {detail}\n"
@@ -106,4 +111,3 @@ def run_once() -> None:
     except SonaError as exc:
         print(f"\nSona error: {exc}", file=sys.stderr)
         raise SystemExit(1)
-

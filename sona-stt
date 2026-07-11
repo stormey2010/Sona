@@ -23,7 +23,12 @@ case "${1:-}" in
   logs) need_env; run_docker compose logs -f ;;
   restart) need_env; run_docker compose restart ;;
   stop) need_env; run_docker compose stop ;;
-  update) git pull --ff-only; need_env; run_docker compose build --pull; run_docker compose up -d ;;
+  update)
+    git pull --ff-only
+    echo "Refreshing microphone and host-permission settings..."
+    ./setup.sh
+    run_docker compose build --pull
+    run_docker compose up -d ;;
   *)
     echo "Usage: $0 {setup|test|interactive|devices|logs|restart|stop|update}" >&2
     exit 64 ;;

@@ -48,7 +48,7 @@ It does not include a wake word, text-to-speech, Home Assistant, a web UI, cloud
 
 5. The installer checks that this is a 64-bit Raspberry Pi, installs Docker if necessary, installs ALSA/USB tools, adds your current SSH user to the `docker` group, and opens the microphone selector. Pick the number for your microphone.
 
-   It then writes `.env`, builds the ARM64 Docker image, starts the prepared container, and verifies that the container can see recording devices. On the first install Docker membership normally is not active until you log out and back in. That is okay: Sona automatically falls back to `sudo docker` during this session.
+   It then writes `.env`, configures Docker to prefer working IPv4 routes when contacting Docker Hub (without disabling IPv6), verifies that the Python base image can download, builds the ARM64 Docker image, starts the prepared container, and verifies that the container can see recording devices. On the first install Docker membership normally is not active until you log out and back in. That is okay: Sona automatically falls back to `sudo docker` during this session.
 
 6. Record and transcribe your first sample:
 
@@ -97,6 +97,8 @@ docker compose logs -f
 ```
 
 If `docker` says permission is denied immediately after installing, substitute `sudo docker` or log out of SSH and log in again. The helper commands detect this and use `sudo docker` automatically.
+
+`update` intentionally opens the microphone selector again. This refreshes the audio group and numeric user IDs used by the non-root container, preventing a changed USB device or filesystem permission from breaking recordings after an update.
 
 ## How microphone selection works
 
@@ -180,6 +182,24 @@ Use `./sona-stt devices` to verify the selected device, run setup again if neede
 ### The first model download fails
 
 The first `test` needs internet access to fetch the Whisper model. Verify DNS/network access, then retry. Docker stores models in its named volume, so later tests do not redownload the same model.
+
+### Docker Hub shows an unreachable IPv6 address
+
+Current Sona installs configure Docker's resolver to prefer IPv4 for Docker Hub while leaving normal IPv6 networking enabled. If a previous install stopped at a Docker Hub `network is unreachable` error, update the project with the recovery steps below and rerun the installer. Do not disable IPv6 with `sysctl`; doing so can disconnect an SSH session that uses IPv6.
+
+## Repair or update an existing installation
+
+If you installed an older Sona version, or a build/recording/model download failed, run these commands one line at a time:
+
+```bash
+cd ~/sona-stt
+git pull --ff-only
+sudo docker compose down -v
+./install.sh
+./sona-stt test
+```
+
+`down -v` removes only Sona's stopped containers and its downloaded Whisper-model volume. Use it for this first repair so the replacement non-root container gets a clean writable model cache. It does not remove your project files or `recordings/` WAV files.
 
 ### Docker daemon unavailable
 
