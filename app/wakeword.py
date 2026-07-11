@@ -88,7 +88,7 @@ def listen() -> None:
     detector, name = load_detector()
     command = [
         "arecord", "--device", device, "--format=S16_LE", "--channels=1", "--rate=16000",
-        "--type=raw", "--quiet",
+        "-t", "raw", "--quiet",
     ]
     print("Sona Wake Word")
     print(f"Listening for: {name} (threshold {threshold:g})")
