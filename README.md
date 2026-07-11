@@ -6,7 +6,7 @@ Sona is a deliberately small, local test for one path only:
 USB microphone -> Raspberry Pi -> Docker container -> WAV recording -> faster-whisper -> text in your SSH terminal
 ```
 
-It does not include a wake word, text-to-speech, Home Assistant, a web UI, cloud speech APIs, MQTT, an LLM, or authentication. Its job is to prove that the Pi can pass USB microphone audio safely into Docker and transcribe it locally.
+It includes optional local wake-word detection, but does not include text-to-speech, Home Assistant, a web UI, cloud speech APIs, MQTT, an LLM, or authentication. Its job is to prove that the Pi can pass USB microphone audio safely into Docker and transcribe it locally.
 
 ## What you need
 
@@ -80,6 +80,9 @@ All commands run from the cloned `sona-stt` folder.
 | `./sona-stt setup` | Re-detect microphones and rewrite `.env` with a new selection. Use after swapping microphones. |
 | `./sona-stt test` | Record once, save a WAV in `recordings/`, check it is not silent, and transcribe it. |
 | `./sona-stt interactive` | Repeat record/transcribe tests until you enter `q`. |
+| `./sona-stt wakeword-setup` | Choose a built-in OpenWakeWord phrase or a custom local model file. |
+| `./sona-stt wakeword` | Listen continuously for the selected wake word, then record and transcribe one command. |
+| `./sona-stt wakewords` | List supported preset models and custom files available in `wakewords/`. |
 | `./sona-stt devices` | Show host recording devices, all ALSA names, USB devices, and container recording devices. |
 | `./sona-stt logs` | Follow the prepared container log. Press Ctrl+C to stop following logs only. |
 | `./sona-stt restart` | Restart the prepared Compose container. |
@@ -138,6 +141,34 @@ STT_RECORD_SECONDS=5
 ```
 
 For better English accuracy at a higher CPU/RAM cost, set `STT_MODEL=base.en` or `small.en`. Use `tiny`/`base`/`small` (without `.en`) with an appropriate `STT_LANGUAGE` for multilingual speech. Run `./sona-stt test` afterward; the selected model downloads once into Docker's persistent `whisper-models` volume and is reused on later runs.
+
+## Wake-word detection
+
+Sona uses OpenWakeWord locally in the same microphone-enabled container. It listens to 16 kHz microphone audio in short frames. Once the selected phrase reaches the configured confidence threshold, it stops listening, records the next five seconds, and transcribes that command.
+
+After updating and rebuilding Sona, choose a built-in model:
+
+```bash
+./sona-stt wakeword-setup
+./sona-stt update
+./sona-stt wakeword
+```
+
+The built-in English models are `alexa`, `hey jarvis`, `hey mycroft`, `hey rhasspy`, `current weather`, and `timers`. They are downloaded by OpenWakeWord during the image build/install as needed. The default threshold is `0.5`; raise `WAKEWORD_THRESHOLD` in `.env` to reduce false triggers, or lower it if the phrase is missed.
+
+### Use your own wake word
+
+OpenWakeWord needs a trained model for a new phrase; typing a phrase alone cannot create one. Train or obtain a compatible `.tflite` or `.onnx` OpenWakeWord model, then copy it to `wakewords/` on the Pi. For example:
+
+```bash
+cp /path/to/my-wake-word.tflite ~/sona-stt/wakewords/
+cd ~/sona-stt
+./sona-stt wakeword-setup
+./sona-stt update
+./sona-stt wakeword
+```
+
+Select **Custom model file**, enter `my-wake-word.tflite`, then let the update rebuild the image. Custom model files remain local and are excluded from Git. OpenWakeWord documents a training notebook for creating custom models; expect to train the model outside the Pi, then copy the finished file here. [OpenWakeWord documentation](https://github.com/dscripka/openWakeWord#training-new-models)
 
 ## Troubleshooting
 
@@ -233,7 +264,8 @@ sona-stt/
 │   ├── interactive.py
 │   ├── record_test.py
 │   ├── service.py
-│   └── stt.py
+│   ├── stt.py
+│   └── wakeword.py
 ├── .gitignore
 ├── compose.yaml
 ├── Dockerfile
@@ -241,6 +273,8 @@ sona-stt/
 ├── requirements.txt
 ├── setup.sh
 ├── sona-stt
+├── wakeword_setup.sh
+├── wakewords/
 └── README.md
 ```
 

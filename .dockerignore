@@ -1,6 +1,6 @@
 .git/
 .env
 recordings/
+wakewords/
 __pycache__/
 *.py[cod]
-

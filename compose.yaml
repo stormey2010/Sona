@@ -20,6 +20,7 @@ services:
     volumes:
       - whisper-models:/home/app/.cache/huggingface
       - ./recordings:/app/recordings
+      - ./wakewords:/app/wakewords:ro
 
 volumes:
   whisper-models:

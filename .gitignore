@@ -1,9 +1,10 @@
 .env
 recordings/
+wakewords/*.tflite
+wakewords/*.onnx
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .mypy_cache/
 .venv/
 .DS_Store
-
