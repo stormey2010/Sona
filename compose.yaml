@@ -13,14 +13,17 @@ services:
       HOME: /home/app
       HF_HOME: /home/app/.cache/huggingface
       STT_MODEL_DIR: /home/app/.cache/huggingface
+      WAKEWORD_MODEL_DIR: /home/app/.cache/openwakeword
     devices:
       - /dev/snd:/dev/snd
     group_add:
       - "${AUDIO_GID:?Run ./setup.sh first to create .env}"
     volumes:
       - whisper-models:/home/app/.cache/huggingface
+      - wakeword-models:/home/app/.cache/openwakeword
       - ./recordings:/app/recordings
       - ./wakewords:/app/wakewords:ro
 
 volumes:
   whisper-models:
+  wakeword-models:

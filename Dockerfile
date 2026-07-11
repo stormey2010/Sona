@@ -18,7 +18,7 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 COPY app ./app
-RUN mkdir -p /app/recordings /home/app/.cache/huggingface \
+RUN mkdir -p /app/recordings /home/app/.cache/huggingface /home/app/.cache/openwakeword \
     && chown -R app:app /app /home/app
 
 USER app

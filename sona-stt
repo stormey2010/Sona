@@ -18,7 +18,7 @@ case "${1:-}" in
   wakeword) need_env; run_docker compose run --rm -it stt python -m app.wakeword ;;
   wakeword-setup) need_env; ./wakeword_setup.sh ;;
   wakewords)
-    echo "Preset models: alexa, hey jarvis, hey mycroft, hey rhasspy, current weather, timers"
+    echo "Preset models: alexa, hey jarvis, hey mycroft, hey rhasspy, weather, timer"
     echo "Custom models in wakewords/:"; find wakewords -maxdepth 1 -type f \( -name '*.tflite' -o -name '*.onnx' \) -printf '  %f\n' 2>/dev/null || true ;;
   devices)
     echo "Host recording devices:"; arecord -l || true

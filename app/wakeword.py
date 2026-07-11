@@ -14,10 +14,11 @@ from .stt import SonaError, record, setting, transcribe
 FRAME_SAMPLES = 1280  # 80 ms at 16 kHz, as recommended by openWakeWord.
 
 
-def wakeword_config() -> tuple[list[str], str]:
+def wakeword_config() -> tuple[Path | str, str, str | None]:
     mode = setting("WAKEWORD_MODE", "preset").lower()
     if mode == "preset":
-        return [setting("WAKEWORD_PRESET", "hey jarvis")], "tflite"
+        preset = setting("WAKEWORD_PRESET", "hey jarvis")
+        return preset, "tflite", preset
     if mode == "custom":
         model = Path(setting("WAKEWORD_CUSTOM_MODEL"))
         if not model.is_absolute():
@@ -29,8 +30,51 @@ def wakeword_config() -> tuple[list[str], str]:
             )
         if model.suffix.lower() not in {".tflite", ".onnx"}:
             raise SonaError("A custom wake-word model must end in .tflite or .onnx.")
-        return [str(model)], "onnx" if model.suffix.lower() == ".onnx" else "tflite"
+        return model, "onnx" if model.suffix.lower() == ".onnx" else "tflite", None
     raise SonaError("WAKEWORD_MODE must be preset or custom. Run ./sona-stt wakeword-setup.")
+
+
+def load_detector() -> tuple[object, str]:
+    """Download shared/preset models into a writable persistent volume, then load one."""
+    selection, framework, preset = wakeword_config()
+    cache = Path(setting("WAKEWORD_MODEL_DIR", "/home/app/.cache/openwakeword"))
+    cache.mkdir(parents=True, exist_ok=True)
+    try:
+        from openwakeword.model import Model
+        from openwakeword.utils import download_models
+
+        # download_models also obtains the shared embedding/melspectrogram models.
+        # A custom model still needs those shared feature models; Alexa is the small
+        # preset used solely to make the utility fetch them.
+        download_models(
+            model_names=[preset.replace(" ", "_") if preset else "alexa"],
+            target_directory=str(cache),
+        )
+        if preset:
+            prefix = preset.replace(" ", "_")
+            candidates = sorted(cache.glob(f"{prefix}_v*.{framework}"))
+            if not candidates:
+                raise SonaError(f"OpenWakeWord did not download the {preset!r} model.")
+            model_path = candidates[-1]
+            display_name = preset
+        else:
+            model_path = Path(selection)
+            display_name = model_path.stem
+        suffix = ".onnx" if framework == "onnx" else ".tflite"
+        detector = Model(
+            wakeword_models=[str(model_path)],
+            inference_framework=framework,
+            melspec_model_path=str(cache / f"melspectrogram{suffix}"),
+            embedding_model_path=str(cache / f"embedding_model{suffix}"),
+        )
+        return detector, display_name
+    except SonaError:
+        raise
+    except Exception as exc:
+        raise SonaError(
+            f"Could not download or load the wake-word model: {exc}\n"
+            "Check internet access, then run ./sona-stt wakeword again."
+        ) from exc
 
 
 def listen() -> None:
@@ -39,17 +83,9 @@ def listen() -> None:
     if not shutil.which("arecord"):
         raise SonaError("arecord is missing from the container image.")
 
-    models, framework = wakeword_config()
     threshold = float(setting("WAKEWORD_THRESHOLD", "0.5"))
     device = setting("STT_AUDIO_DEVICE")
-    try:
-        from openwakeword.model import Model
-
-        detector = Model(wakeword_models=models, inference_framework=framework)
-    except Exception as exc:
-        raise SonaError(f"Could not load the wake-word model: {exc}") from exc
-
-    name = models[0] if os.getenv("WAKEWORD_MODE", "preset") == "preset" else Path(models[0]).stem
+    detector, name = load_detector()
     command = [
         "arecord", "--device", device, "--format=S16_LE", "--channels=1", "--rate=16000",
         "--type=raw", "--quiet",
@@ -98,4 +134,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

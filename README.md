@@ -154,7 +154,7 @@ After updating and rebuilding Sona, choose a built-in model:
 ./sona-stt wakeword
 ```
 
-The built-in English models are `alexa`, `hey jarvis`, `hey mycroft`, `hey rhasspy`, `current weather`, and `timers`. They are downloaded by OpenWakeWord during the image build/install as needed. The default threshold is `0.5`; raise `WAKEWORD_THRESHOLD` in `.env` to reduce false triggers, or lower it if the phrase is missed.
+The built-in English models are `alexa`, `hey jarvis`, `hey mycroft`, `hey rhasspy`, `weather`, and `timer`. They are downloaded automatically into Sona's persistent Docker volume on first use. `weather` recognizes current-weather requests and `timer` recognizes timer requests. The default threshold is `0.5`; raise `WAKEWORD_THRESHOLD` in `.env` to reduce false triggers, or lower it if the phrase is missed.
 
 ### Use your own wake word
 

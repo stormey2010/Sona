@@ -25,7 +25,7 @@ read -r -p "Choose a mode: " mode
 
 case "$mode" in
   1)
-    presets=("alexa" "hey jarvis" "hey mycroft" "hey rhasspy" "current weather" "timers")
+    presets=("alexa" "hey jarvis" "hey mycroft" "hey rhasspy" "weather" "timer")
     echo ""
     echo "Available preset models:"
     for index in "${!presets[@]}"; do printf '%d) %s\n' "$((index + 1))" "${presets[$index]}"; done
