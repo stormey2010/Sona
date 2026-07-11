@@ -146,6 +146,8 @@ For better English accuracy at a higher CPU/RAM cost, set `STT_MODEL=base.en` or
 
 Sona uses OpenWakeWord locally in the same microphone-enabled container. It listens to 16 kHz microphone audio in short frames. Once the selected phrase reaches the configured confidence threshold, it stops listening, records the next five seconds, and transcribes that command.
 
+The container intentionally pins NumPy below version 2 because OpenWakeWord's ARM TFLite runtime is currently built against the NumPy 1.x ABI.
+
 After updating and rebuilding Sona, choose a built-in model:
 
 ```bash
