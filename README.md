@@ -109,7 +109,7 @@ If `docker` says permission is denied immediately after installing, substitute `
 
 ## API assistant setup
 
-First install and every `./sona-stt update` run one nine-step wizard: microphone, speaker plus test tone, Groq key, Cerebras key, Tavily key, TTS voice, system prompt, wake word, and start-on-reboot. Press Enter on any individual prompt to keep only that setting and continue to the next one.
+First install and every `./sona-stt update` run one nine-step wizard: microphone, speaker plus optional test tone, Groq key, Cerebras key, Tavily key, TTS voice, system prompt, wake word, and start-on-reboot. Each setting gets its own clean terminal screen. Press Enter to keep only the current value and continue to the next screen.
 
 On the Pi, select remote mode:
 
