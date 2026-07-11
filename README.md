@@ -194,12 +194,13 @@ If you installed an older Sona version, or a build/recording/model download fail
 ```bash
 cd ~/sona-stt
 git pull --ff-only
+./setup.sh
 sudo docker compose down -v
 ./install.sh
 ./sona-stt test
 ```
 
-`down -v` removes only Sona's stopped containers and its downloaded Whisper-model volume. Use it for this first repair so the replacement non-root container gets a clean writable model cache. It does not remove your project files or `recordings/` WAV files.
+Choose your microphone when `setup.sh` prompts; it upgrades the local `.env` with the current user and audio settings before Compose runs. `down -v` removes only Sona's stopped containers and its downloaded Whisper-model volume. Use it for this first repair so the replacement non-root container gets a clean writable model cache. It does not remove your project files or `recordings/` WAV files.
 
 ### Docker daemon unavailable
 
