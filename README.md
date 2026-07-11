@@ -8,6 +8,8 @@ USB microphone -> Raspberry Pi -> Docker container -> WAV recording -> faster-wh
 
 It includes optional local wake-word detection, but does not include text-to-speech, Home Assistant, a web UI, cloud speech APIs, MQTT, an LLM, or authentication. Its job is to prove that the Pi can pass USB microphone audio safely into Docker and transcribe it locally.
 
+The Pi can also send recorded WAV files to a separate Sona server that runs local Whisper on more powerful hardware. This is still local-network speech recognition: no cloud API is involved.
+
 ## What you need
 
 - Raspberry Pi 5 with **64-bit Raspberry Pi OS** and an internet connection.
@@ -80,6 +82,8 @@ All commands run from the cloned `sona-stt` folder.
 | `./sona-stt setup` | Re-detect microphones and rewrite `.env` with a new selection. Use after swapping microphones. |
 | `./sona-stt test` | Record once, save a WAV in `recordings/`, check it is not silent, and transcribe it. |
 | `./sona-stt interactive` | Repeat record/transcribe tests until you enter `q`. |
+| `./sona-stt stt-setup` | Choose whether Whisper runs on the Pi or a Sona server. |
+| `./sona-stt stt-status` | Show local mode or check the configured server health endpoint. |
 | `./sona-stt wakeword-setup` | Choose a built-in OpenWakeWord phrase or a custom local model file. |
 | `./sona-stt wakeword` | Listen continuously for the selected wake word, then record and transcribe one command. |
 | `./sona-stt wakewords` | List supported preset models and custom files available in `wakewords/`. |
@@ -102,6 +106,23 @@ docker compose logs -f
 If `docker` says permission is denied immediately after installing, substitute `sudo docker` or log out of SSH and log in again. The helper commands detect this and use `sudo docker` automatically.
 
 `update` intentionally opens the microphone selector again. This refreshes the audio group and numeric user IDs used by the non-root container, preventing a changed USB device or filesystem permission from breaking recordings after an update.
+
+## Offload transcription to a Sona server
+
+By default, Sona uses `tiny.en` on the Pi. To use a PC, NAS, or another Linux machine for faster local transcription, install [Sona-server](https://github.com/stormey2010/Sona-server) on that machine first. Start its Docker service and note its LAN address, such as `http://192.168.1.50:8080`.
+
+On the Pi, select remote mode:
+
+```bash
+cd ~/sona-stt
+./sona-stt stt-setup
+./sona-stt stt-status
+./sona-stt test
+```
+
+Choose **Remote Sona STT server**, enter the server URL, and `stt-status` should return a small JSON health response. The Pi still records locally and performs wake-word detection locally; only the WAV recording is sent to the server, which returns the transcription. To switch back at any time, run `./sona-stt stt-setup` and choose **Local Raspberry Pi**. The remote backend does not require rebuilding the Pi image.
+
+Keep the server on your trusted LAN. The simple server intentionally has no authentication and should not be exposed to the public internet or port-forwarded.
 
 ## How microphone selection works
 
@@ -275,6 +296,7 @@ sona-stt/
 ├── requirements.txt
 ├── setup.sh
 ├── sona-stt
+├── stt_setup.sh
 ├── wakeword_setup.sh
 ├── wakewords/
 └── README.md

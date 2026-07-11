@@ -79,7 +79,7 @@ def validate_audio(path: Path) -> None:
     print(f"Audio level: valid (RMS {level})")
 
 
-def transcribe(path: Path) -> str:
+def transcribe_local(path: Path) -> str:
     model_name = setting("STT_MODEL", "tiny.en")
     language = setting("STT_LANGUAGE", "en")
     print(f"Loading Whisper model: {model_name}")
@@ -101,6 +101,47 @@ def transcribe(path: Path) -> str:
             "If this is the first run, ensure the Pi has internet access so the model can download."
         ) from exc
     return text or "(No speech detected.)"
+
+
+def transcribe_remote(path: Path) -> str:
+    url = setting("STT_REMOTE_URL").rstrip("/") + "/transcribe"
+    language = setting("STT_LANGUAGE", "en")
+    timeout = int(setting("STT_REMOTE_TIMEOUT", "180"))
+    print(f"Sending recording to STT server: {url}")
+    try:
+        import requests
+
+        with path.open("rb") as audio:
+            response = requests.post(
+                url,
+                files={"audio": (path.name, audio, "audio/wav")},
+                data={"language": language},
+                timeout=timeout,
+            )
+        response.raise_for_status()
+        payload = response.json()
+        text = payload.get("text")
+        if not isinstance(text, str):
+            raise SonaError("The STT server returned no transcription text.")
+        return text or "(No speech detected.)"
+    except SonaError:
+        raise
+    except requests.RequestException as exc:
+        raise SonaError(
+            f"The STT server could not be reached or rejected the recording: {exc}\n"
+            "Run ./sona-stt stt-status, confirm the server is running, and check STT_REMOTE_URL."
+        ) from exc
+    except ValueError as exc:
+        raise SonaError(f"The STT server returned invalid JSON: {exc}") from exc
+
+
+def transcribe(path: Path) -> str:
+    backend = setting("STT_BACKEND", "local").lower()
+    if backend == "local":
+        return transcribe_local(path)
+    if backend == "remote":
+        return transcribe_remote(path)
+    raise SonaError("STT_BACKEND must be local or remote. Run ./sona-stt stt-setup.")
 
 
 def run_once() -> None:

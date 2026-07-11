@@ -49,6 +49,9 @@ wakeword_mode="$(existing_value WAKEWORD_MODE)"; wakeword_mode="${wakeword_mode:
 wakeword_preset="$(existing_value WAKEWORD_PRESET)"; wakeword_preset="${wakeword_preset:-hey jarvis}"
 wakeword_custom_model="$(existing_value WAKEWORD_CUSTOM_MODEL)"
 wakeword_threshold="$(existing_value WAKEWORD_THRESHOLD)"; wakeword_threshold="${wakeword_threshold:-0.5}"
+stt_backend="$(existing_value STT_BACKEND)"; stt_backend="${stt_backend:-local}"
+stt_remote_url="$(existing_value STT_REMOTE_URL)"
+stt_remote_timeout="$(existing_value STT_REMOTE_TIMEOUT)"; stt_remote_timeout="${stt_remote_timeout:-180}"
 
 # The bind-mounted directory must be writable by the non-root container user.
 mkdir -p recordings
@@ -66,6 +69,9 @@ STT_RECORD_SECONDS=${record_seconds}
 AUDIO_GID=${audio_gid}
 STT_UID=${host_uid}
 STT_GID=${host_gid}
+STT_BACKEND=${stt_backend}
+STT_REMOTE_URL=${stt_remote_url}
+STT_REMOTE_TIMEOUT=${stt_remote_timeout}
 WAKEWORD_MODE=${wakeword_mode}
 WAKEWORD_PRESET=${wakeword_preset}
 WAKEWORD_CUSTOM_MODEL=${wakeword_custom_model}
