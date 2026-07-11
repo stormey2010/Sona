@@ -109,18 +109,19 @@ If `docker` says permission is denied immediately after installing, substitute `
 
 ## API assistant setup
 
-After the normal microphone setup, configure API services locally on the Pi:
+First install and every `./sona-stt update` now run the full guided setup automatically: microphone, API keys, TTS voice, speaker, and system prompt. You do not need a separate API command.
 
 On the Pi, select remote mode:
 
 ```bash
 cd ~/sona-stt
 ./sona-stt update
-./sona-stt api-setup
 ./sona-stt assistant
 ```
 
 The setup identifies each service before requesting its key: Groq for STT/TTS, Cerebras for the LLM, and Tavily for web tools. Keys are saved only in ignored `.env`. Rotate any key that was pasted into a chat before entering it. Setup also offers Groq voices (`autumn`, `diana`, `hannah`, `austin`, `daniel`, `troy`) and detected ALSA speakers. `assistant` records, uses Groq STT, lets Cerebras answer with Tavily web tools when needed, then plays Groq TTS. Set `STT_BACKEND=local` in `.env` if you want tests to retain local Whisper.
+
+The system prompt is asked during guided setup. To edit it later, run `./sona-stt prompt`; leave API-key prompts blank to retain their existing values, then enter the replacement system prompt. Sona stores the most recent eight user messages and eight assistant responses in `recordings/conversation.json`, which is sent with later requests as short-term conversation history. Delete that file to clear the conversation.
 
 Keep the server on your trusted LAN. The simple server intentionally has no authentication and should not be exposed to the public internet or port-forwarded.
 

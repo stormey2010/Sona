@@ -58,8 +58,8 @@ TOOLS = [
 ]
 
 
-def ask(prompt: str) -> str:
-    messages = [{"role": "system", "content": setting("CEREBRAS_SYSTEM_PROMPT", "You are Sona, a concise helpful voice assistant.")}, {"role": "user", "content": prompt}]
+def ask(prompt: str, history: list[dict[str, str]]) -> str:
+    messages = [{"role": "system", "content": setting("CEREBRAS_SYSTEM_PROMPT", "You are Sona, a concise helpful voice assistant.")}, *history, {"role": "user", "content": prompt}]
     headers = {"Authorization": f"Bearer {setting('CEREBRAS_API_KEY')}", "Content-Type": "application/json"}
     for _ in range(4):
         payload = {"model": setting("CEREBRAS_MODEL", "gpt-oss-120b"), "messages": messages, "tools": TOOLS, "max_tokens": 2048, "temperature": 1, "top_p": 1, "reasoning_effort": "low"}

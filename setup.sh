@@ -98,3 +98,5 @@ echo "Saved microphone settings to .env"
 echo ""
 echo "Host USB devices:"
 lsusb || true
+echo ""
+./api_setup.sh
