@@ -1,0 +1,23 @@
+services:
+  stt:
+    build:
+      context: .
+    image: sona-stt:local
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      HOME: /home/app
+      HF_HOME: /home/app/.cache/huggingface
+      STT_MODEL_DIR: /home/app/.cache/huggingface
+    devices:
+      - /dev/snd:/dev/snd
+    group_add:
+      - "${AUDIO_GID:?Run ./setup.sh first to create .env}"
+    volumes:
+      - whisper-models:/home/app/.cache/huggingface
+      - ./recordings:/app/recordings
+
+volumes:
+  whisper-models:
+

@@ -1,0 +1,225 @@
+# Sona: Raspberry Pi Docker speech-to-text test
+
+Sona is a deliberately small, local test for one path only:
+
+```text
+USB microphone -> Raspberry Pi -> Docker container -> WAV recording -> faster-whisper -> text in your SSH terminal
+```
+
+It does not include a wake word, text-to-speech, Home Assistant, a web UI, cloud speech APIs, MQTT, an LLM, or authentication. Its job is to prove that the Pi can pass USB microphone audio safely into Docker and transcribe it locally.
+
+## What you need
+
+- Raspberry Pi 5 with **64-bit Raspberry Pi OS** and an internet connection.
+- SSH access to the Pi. You can do the entire install from SSH; no desktop is required.
+- A USB microphone (or USB microphone array) connected before setup.
+- About 2 GB of free disk space for Docker, Python packages, and the first Whisper model download. `tiny.en` is the default and is the sensible first test on a Pi 5.
+
+> Do not run this on 32-bit Raspberry Pi OS. The installer deliberately stops on non-ARM64 systems.
+
+## First installation, from an empty Raspberry Pi
+
+1. SSH into the Pi, then update its package list and install Git if it is not already installed:
+
+   ```bash
+   sudo apt-get update
+   sudo apt-get install -y git
+   ```
+
+2. Plug in the USB microphone. You can confirm that the Pi sees USB hardware with:
+
+   ```bash
+   lsusb
+   ```
+
+3. Clone Sona and enter the new folder:
+
+   ```bash
+   git clone https://github.com/stormey2010/Sona.git sona-stt
+   cd sona-stt
+   ```
+
+4. Make the scripts executable and run the installer:
+
+   ```bash
+   chmod +x install.sh setup.sh sona-stt
+   ./install.sh
+   ```
+
+5. The installer checks that this is a 64-bit Raspberry Pi, installs Docker if necessary, installs ALSA/USB tools, adds your current SSH user to the `docker` group, and opens the microphone selector. Pick the number for your microphone.
+
+   It then writes `.env`, builds the ARM64 Docker image, starts the prepared container, and verifies that the container can see recording devices. On the first install Docker membership normally is not active until you log out and back in. That is okay: Sona automatically falls back to `sudo docker` during this session.
+
+6. Record and transcribe your first sample:
+
+   ```bash
+   ./sona-stt test
+   ```
+
+   Speak normally while the five-second recording runs. The first transcription downloads the `tiny.en` Whisper model, so it can take longer than later runs. A successful result ends with:
+
+   ```text
+   You said:
+   "your recognized speech appears here"
+   ```
+
+7. For repeated tests without retyping the command:
+
+   ```bash
+   ./sona-stt interactive
+   ```
+
+   Press Enter to record another five-second sample. Type `q` then Enter to exit.
+
+## Everyday commands
+
+All commands run from the cloned `sona-stt` folder.
+
+| Command | What it does |
+| --- | --- |
+| `./sona-stt setup` | Re-detect microphones and rewrite `.env` with a new selection. Use after swapping microphones. |
+| `./sona-stt test` | Record once, save a WAV in `recordings/`, check it is not silent, and transcribe it. |
+| `./sona-stt interactive` | Repeat record/transcribe tests until you enter `q`. |
+| `./sona-stt devices` | Show host recording devices, all ALSA names, USB devices, and container recording devices. |
+| `./sona-stt logs` | Follow the prepared container log. Press Ctrl+C to stop following logs only. |
+| `./sona-stt restart` | Restart the prepared Compose container. |
+| `./sona-stt stop` | Stop the prepared Compose container. |
+| `./sona-stt update` | Pull the newest Git commit, rebuild using newer base images where available, and start it. |
+
+The direct Docker commands are also useful:
+
+```bash
+docker compose run --rm stt python -m app.record_test
+docker compose run --rm -it stt python -m app.interactive
+docker compose run --rm stt arecord -l
+docker compose run --rm stt arecord -L
+docker compose logs -f
+```
+
+If `docker` says permission is denied immediately after installing, substitute `sudo docker` or log out of SSH and log in again. The helper commands detect this and use `sudo docker` automatically.
+
+## How microphone selection works
+
+`./setup.sh` reads `arecord -l` and offers detected capture cards as numbered choices. It stores a name such as:
+
+```env
+STT_AUDIO_DEVICE=plughw:CARD=Array,DEV=0
+```
+
+in a local `.env` file, along with the host `audio` group ID. The Compose file passes `/dev/snd` into the container and adds that audio group; it does **not** use privileged Docker mode.
+
+Sona prefers the ALSA card identifier (`CARD=Array`) over a numeric card number (`hw:3,0`). USB audio card numbers can change after a reboot or when devices are unplugged; the card identifier is usually stable. If the card identifier itself changes or the microphone disappears, run:
+
+```bash
+./sona-stt devices
+./sona-stt setup
+```
+
+`arecord -L` lists all ALSA device names. A selected device is recorded as mono, 16-bit PCM, 16 kHz WAV—the expected format for this simple Whisper test.
+
+## Change the Whisper model or recording length
+
+After `./sona-stt setup` creates `.env`, edit it with a terminal editor such as `nano .env`:
+
+```bash
+nano .env
+```
+
+Useful settings are:
+
+```env
+STT_MODEL=tiny.en
+STT_LANGUAGE=en
+STT_RECORD_SECONDS=5
+```
+
+For better English accuracy at a higher CPU/RAM cost, set `STT_MODEL=base.en` or `small.en`. Use `tiny`/`base`/`small` (without `.en`) with an appropriate `STT_LANGUAGE` for multilingual speech. Run `./sona-stt test` afterward; the selected model downloads once into Docker's persistent `whisper-models` volume and is reused on later runs.
+
+## Troubleshooting
+
+### No microphone in setup
+
+Reconnect it, then inspect USB and ALSA discovery:
+
+```bash
+lsusb
+arecord -l
+arecord -L
+```
+
+If it appears in `lsusb` but not in `arecord -l`, the device may not expose an ALSA capture interface or may need a different USB cable/port.
+
+### Selected device no longer exists
+
+This happens after a microphone swap or a changed ALSA card name. Re-run `./sona-stt setup`, select the listed microphone, then run `./sona-stt test` again.
+
+### Permission denied / container has no audio device
+
+First check the host device and group:
+
+```bash
+ls -l /dev/snd
+getent group audio
+```
+
+Then check what Docker sees:
+
+```bash
+./sona-stt devices
+docker compose run --rm stt arecord -l
+```
+
+Run `./sona-stt setup` after changing host audio configuration so `.env` gets the current `AUDIO_GID`. Docker must be running, and the installer must have successfully created `.env` before Compose can pass the audio group into the container.
+
+### Recording is silent
+
+Use `./sona-stt devices` to verify the selected device, run setup again if needed, and check physical mute buttons or microphone gain. Sona rejects all-zero/nearly-silent WAV files before sending them to Whisper, and keeps recordings under `recordings/` so you can inspect them.
+
+### The first model download fails
+
+The first `test` needs internet access to fetch the Whisper model. Verify DNS/network access, then retry. Docker stores models in its named volume, so later tests do not redownload the same model.
+
+### Docker daemon unavailable
+
+Start Docker and retry:
+
+```bash
+sudo systemctl enable --now docker
+sudo docker info
+```
+
+## Complete uninstall
+
+From the project folder, stop containers and remove the project image/volumes:
+
+```bash
+./sona-stt stop
+sudo docker compose down --rmi local --volumes --remove-orphans
+cd ..
+rm -rf sona-stt
+```
+
+Removing volumes also removes downloaded Whisper models. The installer adds your SSH user to the Docker group; if you want to undo that separately, run `sudo gpasswd -d "$USER" docker` and log in again.
+
+## Project tree
+
+```text
+sona-stt/
+├── app/
+│   ├── __init__.py
+│   ├── interactive.py
+│   ├── record_test.py
+│   ├── service.py
+│   └── stt.py
+├── .gitignore
+├── compose.yaml
+├── Dockerfile
+├── install.sh
+├── requirements.txt
+├── setup.sh
+├── sona-stt
+└── README.md
+```
+
+`.env`, recordings, downloaded models, and Python caches are intentionally excluded from Git.
+

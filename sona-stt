@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT_DIR"
+die() { echo "Error: $*" >&2; exit 1; }
+run_docker() {
+  if docker info >/dev/null 2>&1; then docker "$@"
+  elif sudo docker info >/dev/null 2>&1; then sudo docker "$@"
+  else die "Docker daemon is unavailable. Run: sudo systemctl enable --now docker"
+  fi
+}
+need_env() { [[ -f .env ]] || { echo "No .env file yet. Run ./sona-stt setup first." >&2; exit 1; }; }
+
+case "${1:-}" in
+  setup) ./setup.sh ;;
+  test) need_env; run_docker compose run --rm stt python -m app.record_test ;;
+  interactive) need_env; run_docker compose run --rm -it stt python -m app.interactive ;;
+  devices)
+    echo "Host recording devices:"; arecord -l || true
+    echo ""; echo "Host ALSA names:"; arecord -L || true
+    echo ""; echo "USB devices:"; lsusb || true
+    if [[ -f .env ]]; then echo ""; echo "Container recording devices:"; run_docker compose run --rm stt arecord -l; fi ;;
+  logs) need_env; run_docker compose logs -f ;;
+  restart) need_env; run_docker compose restart ;;
+  stop) need_env; run_docker compose stop ;;
+  update) git pull --ff-only; need_env; run_docker compose build --pull; run_docker compose up -d ;;
+  *)
+    echo "Usage: $0 {setup|test|interactive|devices|logs|restart|stop|update}" >&2
+    exit 64 ;;
+esac
