@@ -5,7 +5,7 @@ bold=$'\033[1m'; dim=$'\033[2m'; green=$'\033[32m'; reset=$'\033[0m'; [[ -t 1 ]]
 screen(){ [[ -t 1 ]] && printf '\033[2J\033[H' || true; }
 set_value(){ local k="$1" v="$2" t; t="$(mktemp)"; awk -F= -v k="$k" -v v="$v" '$1==k{print k"="v; f=1; next}{print} END{if(!f)print k"="v}' .env > "$t"; mv "$t" .env; }
 get(){ awk -v k="$1" 'index($0,k"=")==1 {sub(/^[^=]*=/,""); v=$0} END{print v}' .env; }
-secret(){ local label="$1" name="$2" v saved="missing"; [[ -n "$(get "$name")" ]] && saved="saved"; screen; echo "${bold}${label}${reset}  ${dim}(${saved})${reset}"; echo "${dim}Press Enter to keep this key and continue.${reset}"; read -r -s -p "New key: " v || v=""; echo; if [[ -n "$v" ]]; then set_value "$name" "$v"; fi; return 0; }
+secret(){ local label="$1" name="$2" v saved="missing"; [[ -n "$(get "$name")" ]] && saved="saved"; screen; echo "${bold}${label}${reset}  ${dim}(${saved})${reset}"; echo "${dim}Press Enter to keep this key and continue. Your typing will be visible.${reset}"; read -r -p "New key: " v || v=""; if [[ -n "$v" ]]; then set_value "$name" "$v"; fi; return 0; }
 
 screen
 echo "${bold}2 / 9  Speaker${reset}"
