@@ -1,8 +1,10 @@
 import json
+import os
 from pathlib import Path
 
 from .cloud import ask, groq_transcribe, speak
 from .stt import SonaError, record
+from .telemetry import emit, now
 
 
 HISTORY_PATH = Path("/app/recordings/conversation.json")
@@ -34,10 +36,16 @@ def respond(audio=None) -> None:
     heard = groq_transcribe(audio)
     print(f'\nYou said:\n"{heard}"')
     prior = history()
-    reply = ask(heard, prior)
-    save_history([*prior, {"role": "user", "content": heard}, {"role": "assistant", "content": reply}])
+    emit("user_message", heard)
+    user_message = {"role": "user", "content": heard, "timestamp": now()}
+    save_history([*prior, user_message])
+    reply, usage = ask(heard, prior)
+    assistant_message = {"role": "assistant", "content": reply, "timestamp": now()}
+    save_history([*prior, user_message, assistant_message])
+    emit("assistant_message", reply, usage=usage)
     print(f'\nSona:\n"{reply}"')
     speak(reply)
+    emit("tts", "Spoken response completed", voice=os.getenv("GROQ_TTS_VOICE", "autumn"))
 
 
 def main() -> None:

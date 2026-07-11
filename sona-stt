@@ -33,13 +33,15 @@ case "${1:-}" in
   restart) need_env; run_docker compose restart ;;
   start) need_env; run_docker compose up -d ;;
   stop) need_env; run_docker compose stop ;;
+  dashboard) echo "http://$(hostname -I | awk '{print $1}'):5054" ;;
   update)
     git pull --ff-only
     echo "Refreshing microphone and host-permission settings..."
     ./setup.sh
     run_docker compose build --pull
-    run_docker compose up -d ;;
+    run_docker compose up -d
+    ./dashboard/install.sh ;;
   *)
-    echo "Usage: $0 {setup|api-setup|prompt|assistant|speaker-test|test|interactive|wakeword|wakeword-setup|wakewords|devices|logs|start|restart|stop|update}" >&2
+    echo "Usage: $0 {setup|api-setup|prompt|assistant|speaker-test|test|interactive|wakeword|wakeword-setup|wakewords|devices|logs|dashboard|start|restart|stop|update}" >&2
     exit 64 ;;
 esac

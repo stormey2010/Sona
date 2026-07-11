@@ -127,6 +127,14 @@ After wake-word detection, Sona records until you finish speaking instead of usi
 
 Use `./sona-stt speaker-test` to play a short tone through the selected speaker. This tests output separately from the microphone and AI services.
 
+## LAN dashboard
+
+Sona installs a responsive control dashboard on port `5054`. Open `http://PI-IP:5054` from a phone, tablet, or computer on the same trusted network. Run `./sona-stt dashboard` to print the exact URL.
+
+The dashboard shows live online state, recent wake-word and assistant activity, timestamped conversation messages, Cerebras prompt/completion/total token usage, host uptime, Docker logs, and current device configuration. Setup & Settings can change microphones, speakers, silence/noise controls, models, voice, system prompt, wake word, autostart, and API keys. Blank API-key fields preserve the saved values. Restart and Update controls manage the Docker service directly from the Pi host.
+
+The dashboard intentionally listens on the trusted LAN and has no login yet. Do not port-forward port `5054` or expose it to the public internet, because it can change settings and restart/update Sona.
+
 Run one assistant conversation manually with `./sona-stt assistant`. Run the wake-word listener in the current SSH session with `./sona-stt wakeword`. If start-on-reboot is enabled in setup, Docker starts Sona's wake-word assistant automatically whenever the Pi and Docker restart; check it with `./sona-stt logs` and disable it by running setup again and choosing `n` at the final step. Because the background listener owns the microphone, stop it before a manual test with `./sona-stt stop`, run `./sona-stt assistant`, then restore autostart with `./sona-stt start`.
 
 Keep the server on your trusted LAN. The simple server intentionally has no authentication and should not be exposed to the public internet or port-forwarded.
@@ -278,6 +286,8 @@ From the project folder, stop containers and remove the project image/volumes:
 
 ```bash
 ./sona-stt stop
+sudo systemctl disable --now sona-dashboard
+sudo rm -f /etc/systemd/system/sona-dashboard.service
 sudo docker compose down --rmi local --volumes --remove-orphans
 cd ..
 rm -rf sona-stt
@@ -291,11 +301,22 @@ Removing volumes also removes downloaded Whisper models. The installer adds your
 sona-stt/
 ├── app/
 │   ├── __init__.py
+│   ├── assistant.py
+│   ├── cloud.py
 │   ├── interactive.py
 │   ├── record_test.py
 │   ├── service.py
+│   ├── speaker_test.py
 │   ├── stt.py
+│   ├── telemetry.py
 │   └── wakeword.py
+├── dashboard/
+│   ├── static/
+│   │   ├── app.js
+│   │   ├── index.html
+│   │   └── style.css
+│   ├── install.sh
+│   └── server.py
 ├── .gitignore
 ├── compose.yaml
 ├── Dockerfile
@@ -303,7 +324,6 @@ sona-stt/
 ├── requirements.txt
 ├── setup.sh
 ├── sona-stt
-├── stt_setup.sh
 ├── wakeword_setup.sh
 ├── wakewords/
 └── README.md

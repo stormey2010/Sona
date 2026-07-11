@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 
 from .stt import SonaError, record_until_silence, setting
+from .telemetry import emit
 
 FRAME_SAMPLES = 1280  # 80 ms at 16 kHz, as recommended by openWakeWord.
 
@@ -112,6 +113,7 @@ def listen() -> None:
                 continue
             label, score = max(detected, key=lambda item: float(item[1]))
             print(f"Wake word detected: {label} ({float(score):.2f})")
+            emit("wakeword", f"Wake word detected: {label}", score=round(float(score), 3))
             ordered_levels = sorted(recent_levels)
             noise_floor = ordered_levels[max(0, len(ordered_levels) // 5)] if ordered_levels else None
             process.terminate()

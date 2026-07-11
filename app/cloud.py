@@ -58,18 +58,24 @@ TOOLS = [
 ]
 
 
-def ask(prompt: str, history: list[dict[str, str]]) -> str:
-    messages = [{"role": "system", "content": setting("CEREBRAS_SYSTEM_PROMPT", "You are Sona, a concise helpful voice assistant.")}, *history, {"role": "user", "content": prompt}]
+def ask(prompt: str, history: list[dict[str, str]]) -> tuple[str, dict[str, int]]:
+    clean_history = [{"role": item["role"], "content": item["content"]} for item in history]
+    messages = [{"role": "system", "content": setting("CEREBRAS_SYSTEM_PROMPT", "You are Sona, a concise helpful voice assistant.")}, *clean_history, {"role": "user", "content": prompt}]
     headers = {"Authorization": f"Bearer {setting('CEREBRAS_API_KEY')}", "Content-Type": "application/json"}
+    totals = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
     for _ in range(4):
         payload = {"model": setting("CEREBRAS_MODEL", "gpt-oss-120b"), "messages": messages, "tools": TOOLS, "max_tokens": 2048, "temperature": 1, "top_p": 1, "reasoning_effort": "low"}
         response = requests.post("https://api.cerebras.ai/v1/chat/completions", headers=headers, json=payload, timeout=120)
         response.raise_for_status()
-        message = response.json()["choices"][0]["message"]
+        data = response.json()
+        usage = data.get("usage") or {}
+        for key in totals:
+            totals[key] += int(usage.get(key, 0) or 0)
+        message = data["choices"][0]["message"]
         calls = message.get("tool_calls") or []
         messages.append(message)
         if not calls:
-            return message.get("content") or "I do not have a response."
+            return message.get("content") or "I do not have a response.", totals
         for call in calls:
             name = call["function"]["name"]
             arguments = json.loads(call["function"]["arguments"])

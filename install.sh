@@ -79,9 +79,11 @@ run_docker compose build
 echo "[6/6] Starting container and checking audio access"
 run_docker compose up -d
 run_docker compose run --rm stt arecord -l || die "The container cannot list audio capture devices. Check /dev/snd and audio permissions."
+./dashboard/install.sh
 
 echo ""
 echo "Setup complete."
 echo "Run one test:       ./sona-stt test"
 echo "Run interactive:    ./sona-stt interactive"
 echo "View logs:          ./sona-stt logs"
+echo "Open dashboard:     http://$(hostname -I | awk '{print $1}'):5054"
