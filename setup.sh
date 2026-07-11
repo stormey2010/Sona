@@ -15,7 +15,7 @@ echo ""
 echo "${bold}${cyan}Sona setup${reset}"
 echo "${dim}Press Enter to keep a saved choice.${reset}"
 echo ""
-echo "${bold}1 / 8  Microphone${reset}"
+echo "${bold}1 / 9  Microphone${reset}"
 mapfile -t cards < <(arecord -l 2>/dev/null | sed -nE 's/^card ([0-9]+): ([^ ]+) \[([^]]+)\].*/\1|\2|\3/p')
 ((${#cards[@]})) || die "No microphone found. Connect one, then rerun ./sona-stt setup."
 default=1
@@ -52,19 +52,26 @@ CEREBRAS_API_KEY=$(value CEREBRAS_API_KEY)
 CEREBRAS_MODEL=$(value CEREBRAS_MODEL)
 CEREBRAS_SYSTEM_PROMPT=$(value CEREBRAS_SYSTEM_PROMPT)
 TAVILY_API_KEY=$(value TAVILY_API_KEY)
+SONA_AUTOSTART=$(value SONA_AUTOSTART)
 WAKEWORD_MODE=$(value WAKEWORD_MODE)
 WAKEWORD_PRESET=$(value WAKEWORD_PRESET)
 WAKEWORD_CUSTOM_MODEL=$(value WAKEWORD_CUSTOM_MODEL)
 WAKEWORD_THRESHOLD=$(value WAKEWORD_THRESHOLD)
 EOF
-sed -i 's/^STT_MODEL=$/STT_MODEL=tiny.en/; s/^STT_LANGUAGE=$/STT_LANGUAGE=en/; s/^STT_RECORD_SECONDS=$/STT_RECORD_SECONDS=5/; s/^STT_BACKEND=$/STT_BACKEND=groq/; s/^GROQ_STT_MODEL=$/GROQ_STT_MODEL=whisper-large-v3-turbo/; s/^GROQ_TTS_MODEL=$/GROQ_TTS_MODEL=canopylabs\/orpheus-v1-english/; s/^CEREBRAS_MODEL=$/CEREBRAS_MODEL=gpt-oss-120b/; s/^WAKEWORD_MODE=$/WAKEWORD_MODE=preset/; s/^WAKEWORD_PRESET=$/WAKEWORD_PRESET=hey jarvis/; s/^WAKEWORD_THRESHOLD=$/WAKEWORD_THRESHOLD=0.5/' .env
+sed -i 's/^STT_MODEL=$/STT_MODEL=tiny.en/; s/^STT_LANGUAGE=$/STT_LANGUAGE=en/; s/^STT_RECORD_SECONDS=$/STT_RECORD_SECONDS=5/; s/^STT_BACKEND=$/STT_BACKEND=groq/; s/^GROQ_STT_MODEL=$/GROQ_STT_MODEL=whisper-large-v3-turbo/; s/^GROQ_TTS_MODEL=$/GROQ_TTS_MODEL=canopylabs\/orpheus-v1-english/; s/^CEREBRAS_MODEL=$/CEREBRAS_MODEL=gpt-oss-120b/; s/^SONA_AUTOSTART=$/SONA_AUTOSTART=false/; s/^WAKEWORD_MODE=$/WAKEWORD_MODE=preset/; s/^WAKEWORD_PRESET=$/WAKEWORD_PRESET=hey jarvis/; s/^WAKEWORD_THRESHOLD=$/WAKEWORD_THRESHOLD=0.5/' .env
 
 echo "  ${green}✓${reset} ${mic_name}"
 echo ""
-echo "${bold}2-7 / 8  Speaker & AI${reset}"
+echo "${bold}2-7 / 9  Speaker & AI${reset}"
 ./api_setup.sh
 echo ""
-echo "${bold}8 / 8  Wake word${reset}"
+echo "${bold}8 / 9  Wake word${reset}"
 ./wakeword_setup.sh
+echo ""
+echo "${bold}9 / 9  Start automatically${reset}"
+current_start="$(awk -v k='SONA_AUTOSTART' 'index($0,k"=")==1{sub(/^[^=]*=/,""); print}' .env)"; current_start="${current_start:-false}"
+if [[ "$current_start" == true ]]; then start_default=Y; else start_default=N; fi
+read -r -p "Start Sona after every reboot? [$start_default]: " start_choice || start_choice=""
+if [[ -z "$start_choice" ]]; then :; elif [[ "$start_choice" =~ ^[Yy]$ ]]; then sed -i 's/^SONA_AUTOSTART=.*/SONA_AUTOSTART=true/' .env; elif [[ "$start_choice" =~ ^[Nn]$ ]]; then sed -i 's/^SONA_AUTOSTART=.*/SONA_AUTOSTART=false/' .env; else die "Enter y, n, or press Enter to keep the saved setting."; fi
 echo ""
 echo "${green}${bold}Setup complete.${reset} Run: ${bold}./sona-stt assistant${reset}"

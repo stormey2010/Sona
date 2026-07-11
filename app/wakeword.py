@@ -9,7 +9,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .stt import SonaError, record, setting, transcribe
+from .stt import SonaError, record, setting
 
 FRAME_SAMPLES = 1280  # 80 ms at 16 kHz, as recommended by openWakeWord.
 
@@ -109,9 +109,8 @@ def listen() -> None:
             print(f"Wake word detected: {label} ({float(score):.2f})")
             process.terminate()
             process.wait(timeout=3)
-            path = record()
-            text = transcribe(path)
-            print('\nYou said:\n"' + text + '"\n')
+            from .assistant import respond
+            respond(record())
             return
     except KeyboardInterrupt:
         print("\nWake-word listener stopped.")

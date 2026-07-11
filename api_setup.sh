@@ -6,7 +6,7 @@ set_value(){ local k="$1" v="$2" t; t="$(mktemp)"; awk -F= -v k="$k" -v v="$v" '
 get(){ awk -v k="$1" 'index($0,k"=")==1 {sub(/^[^=]*=/,""); v=$0} END{print v}' .env; }
 secret(){ local label="$1" name="$2" v saved="missing"; [[ -n "$(get "$name")" ]] && saved="saved"; echo ""; echo "${bold}$label${reset}  ${dim}($saved)${reset}"; read -r -s -p "Enter new key or press Enter to keep: " v || v=""; echo; [[ -n "$v" ]] && set_value "$name" "$v"; }
 
-echo "${bold}2 / 8  Speaker${reset}"
+echo "${bold}2 / 9  Speaker${reset}"
 mapfile -t speakers < <(aplay -l 2>/dev/null | sed -nE 's/^card [0-9]+: ([^ ]+) \[([^]]+)\].*/\1|\2/p')
 current="$(get TTS_AUDIO_DEVICE)"; default=0
 for i in "${!speakers[@]}"; do IFS='|' read -r id name <<< "${speakers[$i]}"; device="plughw:CARD=${id},DEV=0"; [[ "$device" == "$current" ]] && default=$((i+1)); printf '  %d) %s%s\n' "$((i+1))" "$name" "$([[ "$device" == "$current" ]] && echo '  (saved)')"; done
@@ -16,17 +16,17 @@ if [[ "$choice" == 0 ]]; then device="default"; set_value TTS_AUDIO_DEVICE ""; e
 read -r -p "Play a test tone now? [Y/n]: " test_tone || test_tone=""; test_tone="${test_tone:-y}"
 if [[ "$test_tone" =~ ^[Yy]$ ]]; then speaker-test --device "$device" --channels=2 --test=sine --nloops=1 >/dev/null 2>&1 && echo "  ${green}✓ Speaker works${reset}" || echo "  Speaker test failed. Try another output next setup."; fi
 
-secret "3 / 8  Groq — speech recognition and voice" GROQ_API_KEY
-secret "4 / 8  Cerebras — assistant intelligence" CEREBRAS_API_KEY
-secret "5 / 8  Tavily — web search tools" TAVILY_API_KEY
+secret "3 / 9  Groq — speech recognition and voice" GROQ_API_KEY
+secret "4 / 9  Cerebras — assistant intelligence" CEREBRAS_API_KEY
+secret "5 / 9  Tavily — web search tools" TAVILY_API_KEY
 
-echo ""; echo "${bold}6 / 8  Assistant voice${reset}"
+echo ""; echo "${bold}6 / 9  Assistant voice${reset}"
 voices=(autumn diana hannah austin daniel troy); current="$(get GROQ_TTS_VOICE)"; current="${current:-autumn}"; default=1
 for i in "${!voices[@]}"; do [[ "${voices[$i]}" == "$current" ]] && default=$((i+1)); done
 echo "  1) autumn  2) diana  3) hannah  4) austin  5) daniel  6) troy"
 read -r -p "Choose voice [$default]: " choice || choice=""; choice="${choice:-$default}"; [[ "$choice" =~ ^[1-6]$ ]] || { echo "Invalid voice" >&2; exit 1; }; set_value GROQ_TTS_VOICE "${voices[$((choice-1))]}"
 
-echo ""; echo "${bold}7 / 8  System prompt${reset}"; echo "${dim}Press Enter to keep the current prompt.${reset}"
+echo ""; echo "${bold}7 / 9  System prompt${reset}"; echo "${dim}Press Enter to keep the current prompt.${reset}"
 read -r -p "> " prompt || prompt=""; [[ -n "$prompt" ]] && set_value CEREBRAS_SYSTEM_PROMPT "$prompt"
 [[ -n "$(get CEREBRAS_SYSTEM_PROMPT)" ]] || set_value CEREBRAS_SYSTEM_PROMPT "You are Sona, a concise helpful voice assistant."
 set_value STT_BACKEND groq; set_value GROQ_STT_MODEL whisper-large-v3-turbo; set_value GROQ_TTS_MODEL canopylabs/orpheus-v1-english; set_value CEREBRAS_MODEL gpt-oss-120b

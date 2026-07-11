@@ -109,7 +109,7 @@ If `docker` says permission is denied immediately after installing, substitute `
 
 ## API assistant setup
 
-First install and every `./sona-stt update` run one eight-step wizard: microphone, speaker plus test tone, Groq key, Cerebras key, Tavily key, TTS voice, system prompt, and wake word. Press Enter on any step to keep its saved value. You do not need separate setup commands.
+First install and every `./sona-stt update` run one nine-step wizard: microphone, speaker plus test tone, Groq key, Cerebras key, Tavily key, TTS voice, system prompt, wake word, and start-on-reboot. Press Enter on any individual prompt to keep only that setting and continue to the next one.
 
 On the Pi, select remote mode:
 
@@ -124,6 +124,8 @@ The setup identifies each service before requesting its key: Groq for STT/TTS, C
 The system prompt is asked during guided setup. To edit it later, run `./sona-stt prompt`; leave API-key prompts blank to retain their existing values, then enter the replacement system prompt. Sona stores the most recent eight user messages and eight assistant responses in `recordings/conversation.json`, which is sent with later requests as short-term conversation history. Delete that file to clear the conversation.
 
 Use `./sona-stt speaker-test` to play a short tone through the selected speaker. This tests output separately from the microphone and AI services.
+
+Run one assistant conversation manually with `./sona-stt assistant`. Run the wake-word listener in the current SSH session with `./sona-stt wakeword`. If start-on-reboot is enabled in setup, Docker starts Sona's wake-word assistant automatically whenever the Pi and Docker restart; check it with `./sona-stt logs` and disable it by running setup again and choosing `n` at the final step.
 
 Keep the server on your trusted LAN. The simple server intentionally has no authentication and should not be exposed to the public internet or port-forwarded.
 

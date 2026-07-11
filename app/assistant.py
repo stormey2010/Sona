@@ -29,16 +29,20 @@ def save_history(items: list[dict[str, str]]) -> None:
     HISTORY_PATH.write_text(json.dumps(keep, ensure_ascii=False), encoding="utf-8")
 
 
+def respond(audio=None) -> None:
+    audio = audio or record()
+    heard = groq_transcribe(audio)
+    print(f'\nYou said:\n"{heard}"')
+    prior = history()
+    reply = ask(heard, prior)
+    save_history([*prior, {"role": "user", "content": heard}, {"role": "assistant", "content": reply}])
+    print(f'\nSona:\n"{reply}"')
+    speak(reply)
+
+
 def main() -> None:
     try:
-        audio = record()
-        heard = groq_transcribe(audio)
-        print(f'\nYou said:\n"{heard}"')
-        prior = history()
-        reply = ask(heard, prior)
-        save_history([*prior, {"role": "user", "content": heard}, {"role": "assistant", "content": reply}])
-        print(f'\nSona:\n"{reply}"')
-        speak(reply)
+        respond()
     except SonaError as exc:
         print(f"\nSona error: {exc}")
         raise SystemExit(1)
