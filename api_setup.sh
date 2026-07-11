@@ -15,8 +15,9 @@ echo ""
 printf 'Voice: 1) autumn  2) diana  3) hannah  4) austin  5) daniel  6) troy\n'
 read -r -p "Choose voice [$default]: " choice; choice="${choice:-$default}"; [[ "$choice" =~ ^[1-6]$ ]] || { echo "Invalid voice" >&2; exit 1; }; set_value GROQ_TTS_VOICE "${voices[$((choice-1))]}"
 mapfile -t speakers < <(aplay -l 2>/dev/null | sed -nE 's/^card [0-9]+: ([^ ]+) \[([^]]+)\].*/\1|\2/p')
-echo ""; echo "Speaker (optional):"; for i in "${!speakers[@]}"; do IFS='|' read -r id name <<< "${speakers[$i]}"; printf '  %d) %s\n' "$((i+1))" "$name"; done; echo "  0) system default"
-read -r -p "Choose speaker [0]: " choice; choice="${choice:-0}"
+current="$(get TTS_AUDIO_DEVICE)"; default=0
+echo ""; echo "Speaker:"; for i in "${!speakers[@]}"; do IFS='|' read -r id name <<< "${speakers[$i]}"; device="plughw:CARD=${id},DEV=0"; [[ "$device" == "$current" ]] && default=$((i+1)); printf '  %d) %s%s\n' "$((i+1))" "$name" "$([[ "$device" == "$current" ]] && echo '  (saved)')"; done; echo "  0) system default"
+read -r -p "Choose speaker [$default]: " choice; choice="${choice:-$default}"
 if [[ "$choice" == 0 ]]; then set_value TTS_AUDIO_DEVICE ""; elif [[ "$choice" =~ ^[1-9][0-9]*$ ]] && ((choice<=${#speakers[@]})); then IFS='|' read -r id _ <<< "${speakers[$((choice-1))]}"; set_value TTS_AUDIO_DEVICE "plughw:CARD=${id},DEV=0"; else echo "Invalid speaker" >&2; exit 1; fi
 current="$(get CEREBRAS_SYSTEM_PROMPT)"; echo ""; echo "System prompt (one line; Enter keeps saved):"; read -r -p "> " prompt
 [[ -n "$prompt" ]] && set_value CEREBRAS_SYSTEM_PROMPT "$prompt"

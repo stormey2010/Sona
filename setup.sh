@@ -61,12 +61,7 @@ sed -i 's/^STT_MODEL=$/STT_MODEL=tiny.en/; s/^STT_LANGUAGE=$/STT_LANGUAGE=en/; s
 
 echo "  ${green}✓${reset} ${mic_name}"
 echo ""
-has_key="$(value GROQ_API_KEY)"
-default_api="n"; [[ -z "$has_key" ]] && default_api="y"
 echo "${bold}2 / 2  Voice & AI${reset}"
-if [[ "$default_api" == y ]]; then prompt="Configure voice & AI now? [Y/n]"; else prompt="Change voice & AI settings? [Enter = keep saved settings]"; fi
-read -r -p "$prompt: " configure
-configure="${configure:-$default_api}"
-if [[ "$configure" =~ ^[Yy]$ ]]; then ./api_setup.sh; else echo "  ${dim}Keeping saved AI settings.${reset}"; fi
+./api_setup.sh
 echo ""
 echo "${green}${bold}Setup complete.${reset} Run: ${bold}./sona-stt assistant${reset}"

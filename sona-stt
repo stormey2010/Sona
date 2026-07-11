@@ -18,7 +18,7 @@ case "${1:-}" in
   api-setup) need_env; ./api_setup.sh ;;
   prompt) need_env; ./api_setup.sh ;;
   assistant) need_env; run_docker compose run --rm -it stt python -m app.assistant ;;
-  speaker-test) need_env; run_docker compose run --rm stt python -m app.speaker_test ;;
+  speaker-test) need_env; run_docker compose run --build --rm stt python -m app.speaker_test ;;
   wakeword) need_env; run_docker compose run --rm -it stt python -m app.wakeword ;;
   wakeword-setup) need_env; ./wakeword_setup.sh ;;
   wakewords)
