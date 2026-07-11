@@ -115,12 +115,14 @@ On the Pi, select remote mode:
 
 ```bash
 cd ~/sona-stt
+git pull --ff-only
+./sona-stt update
 ./sona-stt stt-setup
 ./sona-stt stt-status
 ./sona-stt test
 ```
 
-Choose **Remote Sona STT server**, enter the server URL, and `stt-status` should return a small JSON health response. The Pi still records locally and performs wake-word detection locally; only the WAV recording is sent to the server, which returns the transcription. To switch back at any time, run `./sona-stt stt-setup` and choose **Local Raspberry Pi**. The remote backend does not require rebuilding the Pi image.
+Choose the microphone again during `update`, then choose **Remote Sona STT server** and enter the server URL. `stt-status` should return a small JSON health response. The Pi still records locally and performs wake-word detection locally; only the WAV recording is sent to the server, which returns the transcription. To switch back at any time, run `./sona-stt stt-setup` and choose **Local Raspberry Pi**. Once this version is installed, changing between local and remote modes does not require another rebuild.
 
 Keep the server on your trusted LAN. The simple server intentionally has no authentication and should not be exposed to the public internet or port-forwarded.
 
