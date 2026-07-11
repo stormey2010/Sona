@@ -15,7 +15,7 @@ echo ""
 echo "${bold}${cyan}Sona setup${reset}"
 echo "${dim}Press Enter to keep a saved choice.${reset}"
 echo ""
-echo "${bold}1 / 3  Microphone${reset}"
+echo "${bold}1 / 8  Microphone${reset}"
 mapfile -t cards < <(arecord -l 2>/dev/null | sed -nE 's/^card ([0-9]+): ([^ ]+) \[([^]]+)\].*/\1|\2|\3/p')
 ((${#cards[@]})) || die "No microphone found. Connect one, then rerun ./sona-stt setup."
 default=1
@@ -24,7 +24,7 @@ for i in "${!cards[@]}"; do
   [[ "$device" == "$old_mic" ]] && default=$((i+1))
   printf '  %d) %s%s%s\n' "$((i+1))" "$name" "$([[ "$device" == "$old_mic" ]] && echo '  (saved)')" ""
 done
-read -r -p "Choose microphone [$default]: " choice; choice="${choice:-$default}"
+read -r -p "Choose microphone [$default]: " choice || choice=""; choice="${choice:-$default}"
 [[ "$choice" =~ ^[0-9]+$ ]] && ((choice>=1 && choice<=${#cards[@]})) || die "Choose one of the listed numbers."
 IFS='|' read -r _ mic_id mic_name <<< "${cards[$((choice-1))]}"
 mic="plughw:CARD=${mic_id},DEV=0"
@@ -61,10 +61,10 @@ sed -i 's/^STT_MODEL=$/STT_MODEL=tiny.en/; s/^STT_LANGUAGE=$/STT_LANGUAGE=en/; s
 
 echo "  ${green}✓${reset} ${mic_name}"
 echo ""
-echo "${bold}2 / 3  Voice & AI${reset}"
+echo "${bold}2-7 / 8  Speaker & AI${reset}"
 ./api_setup.sh
 echo ""
-echo "${bold}3 / 3  Wake word${reset}"
+echo "${bold}8 / 8  Wake word${reset}"
 ./wakeword_setup.sh
 echo ""
 echo "${green}${bold}Setup complete.${reset} Run: ${bold}./sona-stt assistant${reset}"

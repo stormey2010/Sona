@@ -6,18 +6,18 @@ get(){ awk -v k="$1" 'index($0,k"=")==1 {sub(/^[^=]*=/,""); v=$0} END{print v}' 
 current_mode="$(get WAKEWORD_MODE)"; current_preset="$(get WAKEWORD_PRESET)"; current_preset="${current_preset:-hey jarvis}"
 echo "Wake word: ${current_mode:-preset} / ${current_preset}"
 echo "  Enter) keep saved wake word   1) choose preset   2) custom model   0) turn off"
-read -r -p "Choose [Enter]: " mode
+read -r -p "Choose [Enter]: " mode || mode=""
 case "$mode" in
   "") ;;
   0) set_value WAKEWORD_MODE off; echo "  Wake word off." ;;
   1)
     presets=(alexa "hey jarvis" "hey mycroft" "hey rhasspy" weather timer)
     for i in "${!presets[@]}"; do printf '  %d) %s\n' "$((i+1))" "${presets[$i]}"; done
-    read -r -p "Preset [2]: " choice; choice="${choice:-2}"; [[ "$choice" =~ ^[1-6]$ ]] || { echo "Invalid preset" >&2; exit 1; }
+    read -r -p "Preset [2]: " choice || choice=""; choice="${choice:-2}"; [[ "$choice" =~ ^[1-6]$ ]] || { echo "Invalid preset" >&2; exit 1; }
     set_value WAKEWORD_MODE preset; set_value WAKEWORD_PRESET "${presets[$((choice-1))]}"; set_value WAKEWORD_CUSTOM_MODEL "" ;;
   2)
     echo "Copy a .tflite or .onnx model into wakewords/ first."
-    read -r -p "Model filename: " filename; [[ -f "wakewords/$filename" ]] || { echo "Model not found." >&2; exit 1; }
+    read -r -p "Model filename: " filename || filename=""; [[ -f "wakewords/$filename" ]] || { echo "Model not found." >&2; exit 1; }
     set_value WAKEWORD_MODE custom; set_value WAKEWORD_CUSTOM_MODEL "wakewords/$filename" ;;
   *) echo "Invalid choice" >&2; exit 1 ;;
 esac
