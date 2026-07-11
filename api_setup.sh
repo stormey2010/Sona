@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 [[ -f .env ]] || { echo "Run ./sona-stt setup first." >&2; exit 1; }
 set_value(){ local k="$1" v="$2" t; t="$(mktemp)"; awk -F= -v k="$k" -v v="$v" '$1==k{print k"="v; f=1; next}{print} END{if(!f)print k"="v}' .env > "$t"; mv "$t" .env; }
-get(){ awk -F= -v k="$1" '$1==k{v=$2} END{print v}' .env; }
+get(){ awk -v k="$1" 'index($0,k"=")==1 {sub(/^[^=]*=/,""); v=$0} END{print v}' .env; }
 secret(){ local name="$1" v; read -r -s -p "  ${name} (Enter keeps saved): " v; echo; [[ -n "$v" ]] && set_value "$name" "$v"; }
 
 echo ""

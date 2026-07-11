@@ -7,7 +7,7 @@ bold=$'\033[1m'; dim=$'\033[2m'; green=$'\033[32m'; cyan=$'\033[36m'; reset=$'\0
 [[ -t 1 ]] || bold= dim= green= cyan= reset=
 die(){ echo "Error: $*" >&2; exit 1; }
 old_env="$(mktemp)"; [[ -f .env ]] && cp .env "$old_env"; trap 'rm -f "$old_env"' EXIT
-value(){ awk -F= -v key="$1" '$1==key{v=$2} END{print v}' "$old_env"; }
+value(){ awk -v key="$1" 'index($0,key"=")==1 {sub(/^[^=]*=/,""); v=$0} END{print v}' "$old_env"; }
 command -v arecord >/dev/null 2>&1 || die "Audio tools are missing. Run ./install.sh first."
 
 old_mic="$(value STT_AUDIO_DEVICE)"; old_voice="$(value GROQ_TTS_VOICE)"; old_voice="${old_voice:-autumn}"
@@ -15,7 +15,7 @@ echo ""
 echo "${bold}${cyan}Sona setup${reset}"
 echo "${dim}Press Enter to keep a saved choice.${reset}"
 echo ""
-echo "${bold}1 / 2  Microphone${reset}"
+echo "${bold}1 / 3  Microphone${reset}"
 mapfile -t cards < <(arecord -l 2>/dev/null | sed -nE 's/^card ([0-9]+): ([^ ]+) \[([^]]+)\].*/\1|\2|\3/p')
 ((${#cards[@]})) || die "No microphone found. Connect one, then rerun ./sona-stt setup."
 default=1
@@ -61,7 +61,10 @@ sed -i 's/^STT_MODEL=$/STT_MODEL=tiny.en/; s/^STT_LANGUAGE=$/STT_LANGUAGE=en/; s
 
 echo "  ${green}✓${reset} ${mic_name}"
 echo ""
-echo "${bold}2 / 2  Voice & AI${reset}"
+echo "${bold}2 / 3  Voice & AI${reset}"
 ./api_setup.sh
+echo ""
+echo "${bold}3 / 3  Wake word${reset}"
+./wakeword_setup.sh
 echo ""
 echo "${green}${bold}Setup complete.${reset} Run: ${bold}./sona-stt assistant${reset}"
