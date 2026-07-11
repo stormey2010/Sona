@@ -15,17 +15,8 @@ case "${1:-}" in
   setup) ./setup.sh ;;
   test) need_env; run_docker compose run --rm stt python -m app.record_test ;;
   interactive) need_env; run_docker compose run --rm -it stt python -m app.interactive ;;
-  stt-setup) need_env; ./stt_setup.sh ;;
-  stt-status)
-    need_env
-    backend="$(awk -F= '$1 == "STT_BACKEND" {print $2}' .env | tail -n1)"
-    if [[ "$backend" == "remote" ]]; then
-      url="$(awk -F= '$1 == "STT_REMOTE_URL" {print $2}' .env | tail -n1)"
-      [[ -n "$url" ]] || die "STT_REMOTE_URL is empty. Run ./sona-stt stt-setup."
-      curl -fsS "${url%/}/health" || die "STT server is unavailable at $url"
-    else
-      echo "STT backend: local Raspberry Pi"
-    fi ;;
+  api-setup) need_env; ./api_setup.sh ;;
+  assistant) need_env; run_docker compose run --rm -it stt python -m app.assistant ;;
   wakeword) need_env; run_docker compose run --rm -it stt python -m app.wakeword ;;
   wakeword-setup) need_env; ./wakeword_setup.sh ;;
   wakewords)
@@ -46,6 +37,6 @@ case "${1:-}" in
     run_docker compose build --pull
     run_docker compose up -d ;;
   *)
-    echo "Usage: $0 {setup|stt-setup|stt-status|test|interactive|wakeword|wakeword-setup|wakewords|devices|logs|restart|stop|update}" >&2
+    echo "Usage: $0 {setup|api-setup|assistant|test|interactive|wakeword|wakeword-setup|wakewords|devices|logs|restart|stop|update}" >&2
     exit 64 ;;
 esac

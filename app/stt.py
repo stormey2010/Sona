@@ -150,9 +150,10 @@ def transcribe(path: Path) -> str:
     backend = setting("STT_BACKEND", "local").lower()
     if backend == "local":
         return transcribe_local(path)
-    if backend == "remote":
-        return transcribe_remote(path)
-    raise SonaError("STT_BACKEND must be local or remote. Run ./sona-stt stt-setup.")
+    if backend == "groq":
+        from .cloud import groq_transcribe
+        return groq_transcribe(path)
+    raise SonaError("STT_BACKEND must be local or groq. Run ./sona-stt api-setup.")
 
 
 def run_once() -> None:

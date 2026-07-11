@@ -8,7 +8,7 @@ USB microphone -> Raspberry Pi -> Docker container -> WAV recording -> faster-wh
 
 It includes optional local wake-word detection, but does not include text-to-speech, Home Assistant, a web UI, cloud speech APIs, MQTT, an LLM, or authentication. Its job is to prove that the Pi can pass USB microphone audio safely into Docker and transcribe it locally.
 
-The Pi can also send recorded WAV files to a separate Sona server that runs local Whisper on more powerful hardware. This is still local-network speech recognition: no cloud API is involved.
+Sona can use Groq for speech-to-text and text-to-speech, Cerebras for the assistant LLM, and Tavily for web search, extraction, and crawling.
 
 ## What you need
 
@@ -107,22 +107,20 @@ If `docker` says permission is denied immediately after installing, substitute `
 
 `update` intentionally opens the microphone selector again. This refreshes the audio group and numeric user IDs used by the non-root container, preventing a changed USB device or filesystem permission from breaking recordings after an update.
 
-## Offload transcription to a Sona server
+## API assistant setup
 
-By default, Sona uses `tiny.en` on the Pi. To use a PC, NAS, or another Linux machine for faster local transcription, install [Sona-server](https://github.com/stormey2010/Sona-server) on that machine first. Start its Docker service and note its LAN address, such as `http://192.168.1.50:8080`.
+After the normal microphone setup, configure API services locally on the Pi:
 
 On the Pi, select remote mode:
 
 ```bash
 cd ~/sona-stt
-git pull --ff-only
 ./sona-stt update
-./sona-stt stt-setup
-./sona-stt stt-status
-./sona-stt test
+./sona-stt api-setup
+./sona-stt assistant
 ```
 
-Choose the microphone again during `update`, then choose **Remote Sona STT server** and enter the server URL. `stt-status` should return a small JSON health response. The Pi still records locally and performs wake-word detection locally; only the WAV recording is sent to the server, which returns the transcription. To switch back at any time, run `./sona-stt stt-setup` and choose **Local Raspberry Pi**. Once this version is installed, changing between local and remote modes does not require another rebuild.
+The setup identifies each service before requesting its key: Groq for STT/TTS, Cerebras for the LLM, and Tavily for web tools. Keys are saved only in ignored `.env`. Rotate any key that was pasted into a chat before entering it. Setup also offers Groq voices (`autumn`, `diana`, `hannah`, `austin`, `daniel`, `troy`) and detected ALSA speakers. `assistant` records, uses Groq STT, lets Cerebras answer with Tavily web tools when needed, then plays Groq TTS. Set `STT_BACKEND=local` in `.env` if you want tests to retain local Whisper.
 
 Keep the server on your trusted LAN. The simple server intentionally has no authentication and should not be exposed to the public internet or port-forwarded.
 

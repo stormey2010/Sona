@@ -52,6 +52,11 @@ wakeword_threshold="$(existing_value WAKEWORD_THRESHOLD)"; wakeword_threshold="$
 stt_backend="$(existing_value STT_BACKEND)"; stt_backend="${stt_backend:-local}"
 stt_remote_url="$(existing_value STT_REMOTE_URL)"
 stt_remote_timeout="$(existing_value STT_REMOTE_TIMEOUT)"; stt_remote_timeout="${stt_remote_timeout:-180}"
+groq_key="$(existing_value GROQ_API_KEY)"; cerebras_key="$(existing_value CEREBRAS_API_KEY)"; tavily_key="$(existing_value TAVILY_API_KEY)"
+groq_stt_model="$(existing_value GROQ_STT_MODEL)"; groq_stt_model="${groq_stt_model:-whisper-large-v3-turbo}"
+groq_tts_model="$(existing_value GROQ_TTS_MODEL)"; groq_tts_model="${groq_tts_model:-canopylabs/orpheus-v1-english}"
+groq_tts_voice="$(existing_value GROQ_TTS_VOICE)"; groq_tts_voice="${groq_tts_voice:-autumn}"
+tts_audio_device="$(existing_value TTS_AUDIO_DEVICE)"; cerebras_model="$(existing_value CEREBRAS_MODEL)"; cerebras_prompt="$(existing_value CEREBRAS_SYSTEM_PROMPT)"
 
 # The bind-mounted directory must be writable by the non-root container user.
 mkdir -p recordings
@@ -72,6 +77,15 @@ STT_GID=${host_gid}
 STT_BACKEND=${stt_backend}
 STT_REMOTE_URL=${stt_remote_url}
 STT_REMOTE_TIMEOUT=${stt_remote_timeout}
+GROQ_API_KEY=${groq_key}
+GROQ_STT_MODEL=${groq_stt_model}
+GROQ_TTS_MODEL=${groq_tts_model}
+GROQ_TTS_VOICE=${groq_tts_voice}
+TTS_AUDIO_DEVICE=${tts_audio_device}
+CEREBRAS_API_KEY=${cerebras_key}
+CEREBRAS_MODEL=${cerebras_model:-gpt-oss-120b}
+CEREBRAS_SYSTEM_PROMPT=${cerebras_prompt}
+TAVILY_API_KEY=${tavily_key}
 WAKEWORD_MODE=${wakeword_mode}
 WAKEWORD_PRESET=${wakeword_preset}
 WAKEWORD_CUSTOM_MODEL=${wakeword_custom_model}
