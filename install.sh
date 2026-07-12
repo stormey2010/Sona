@@ -68,7 +68,18 @@ if ! docker info >/dev/null 2>&1; then
   echo "Log out and back in later to run Docker without sudo."
 fi
 
-echo "[4/6] Detecting microphones"
+echo "[4/6] Starting the dashboard"
+./dashboard/install.sh
+dashboard_url="http://$(hostname -I | awk '{print $1}'):5054"
+echo ""
+echo "Choose how to finish setup:"
+echo "  1) Terminal setup"
+echo "  2) Web setup at $dashboard_url"
+read -r -p "Choose [1/2]: " setup_path
+if [[ "${setup_path:-1}" == 2 ]]; then
+  echo "Dashboard is running. Open $dashboard_url on any device on this network."
+  exit 0
+fi
 ./setup.sh
 
 echo "[5/6] Building speech-to-text container"
@@ -77,9 +88,12 @@ run_docker pull --quiet python:3.11-slim-bookworm || die "Docker Hub could not b
 run_docker compose build
 
 echo "[6/6] Starting container and checking audio access"
-run_docker compose up -d
+if grep -q '^HA_MCP_ENABLED=true' .env && grep -q '^HOMEASSISTANT_URL=.' .env && grep -q '^HOMEASSISTANT_TOKEN=.' .env; then
+  run_docker compose --profile ha-mcp up -d
+else
+  run_docker compose up -d
+fi
 run_docker compose run --rm stt arecord -l || die "The container cannot list audio capture devices. Check /dev/snd and audio permissions."
-./dashboard/install.sh
 
 echo ""
 echo "Setup complete."

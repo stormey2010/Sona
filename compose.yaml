@@ -23,6 +23,17 @@ services:
       - wakeword-models:/home/app/.cache/openwakeword
       - ./recordings:/app/recordings
       - ./wakewords:/app/wakewords:ro
+      - ./assets:/app/assets:ro
+
+  ha-mcp:
+    image: ghcr.io/homeassistant-ai/ha-mcp:latest
+    profiles: ["ha-mcp"]
+    restart: unless-stopped
+    environment:
+      HOMEASSISTANT_URL: "${HOMEASSISTANT_URL:-}"
+      HOMEASSISTANT_TOKEN: "${HOMEASSISTANT_TOKEN:-}"
+      ENABLE_TOOL_SEARCH: "true"
+      LOG_LEVEL: "INFO"
 
 volumes:
   whisper-models:

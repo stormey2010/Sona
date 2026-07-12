@@ -135,6 +135,22 @@ The dashboard shows live online state, recent wake-word and assistant activity, 
 
 The dashboard intentionally listens on the trusted LAN and has no login yet. Do not port-forward port `5054` or expose it to the public internet, because it can change settings and restart/update Sona.
 
+### Choose terminal or web setup
+
+`./install.sh` and `./sona-stt update` start and verify the dashboard before setup. Press `1` for terminal setup or `2` for web setup; the command prints the Pi's exact URL, such as `http://192.168.1.50:5054`. If port 5054 cannot start, the script prints the systemd status and journal instead of claiming it worked.
+
+The web setup can build the container on a fresh installation. Choose the microphone, speaker, wake word, listening sounds, and API settings, then press **Save & apply**.
+
+### Listening sounds and uploads
+
+Sona plays the included start sound after hearing the wake word and the included end sound when end-of-speech detection stops recording. In **Setup & settings**, select either sound or turn it off. You can upload `.wav`/`.mp3` cue sounds and `.tflite`/`.onnx` OpenWakeWord models from the phone or computer viewing the dashboard. User uploads stay on the Pi and are ignored by Git.
+
+### Home Assistant and HA-MCP
+
+In Home Assistant, open your profile and create a **Long-Lived Access Token**. In Sona's web settings, enter the Home Assistant URL (for example `http://192.168.1.20:8123`), paste the token, and set **Home Assistant tools** to on. Saving starts the official HA-MCP container and gives Sona focused tools for entity search, state lookup, and service calls. The saved token stays in the ignored `.env` file and is not returned to the browser.
+
+Configure only this HA-MCP method for Sona. The upstream project warns that configuring two HA-MCP servers for one client can cause connection hangs.
+
 Run one assistant conversation manually with `./sona-stt assistant`. Run the wake-word listener in the current SSH session with `./sona-stt wakeword`. If start-on-reboot is enabled in setup, Docker starts Sona's wake-word assistant automatically whenever the Pi and Docker restart; check it with `./sona-stt logs` and disable it by running setup again and choosing `n` at the final step. Because the background listener owns the microphone, stop it before a manual test with `./sona-stt stop`, run `./sona-stt assistant`, then restore autostart with `./sona-stt start`.
 
 Keep the server on your trusted LAN. The simple server intentionally has no authentication and should not be exposed to the public internet or port-forwarded.

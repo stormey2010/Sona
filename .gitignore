@@ -1,5 +1,7 @@
 .env
 recordings/
+wakewords/uploads/
+assets/sounds/uploads/
 wakewords/*.tflite
 wakewords/*.onnx
 __pycache__/

@@ -13,7 +13,7 @@ from datetime import datetime
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
 STATIC = Path(__file__).resolve().parent / "static"
@@ -28,9 +28,18 @@ EDITABLE = {
     "STT_SPEECH_THRESHOLD", "STT_NOISE_MULTIPLIER", "STT_LANGUAGE", "STT_RECORD_SECONDS",
     "STT_BACKEND", "GROQ_API_KEY", "GROQ_STT_MODEL", "GROQ_TTS_MODEL", "GROQ_TTS_VOICE",
     "CEREBRAS_API_KEY", "CEREBRAS_MODEL", "CEREBRAS_SYSTEM_PROMPT", "TAVILY_API_KEY", "WAKEWORD_MODE",
-    "WAKEWORD_PRESET", "WAKEWORD_CUSTOM_MODEL", "WAKEWORD_THRESHOLD", "SONA_AUTOSTART",
+    "WAKEWORD_PRESET", "WAKEWORD_CUSTOM_MODEL", "WAKEWORD_THRESHOLD", "WAKE_START_SOUND",
+    "WAKE_END_SOUND", "HOMEASSISTANT_URL", "HOMEASSISTANT_TOKEN", "HA_MCP_ENABLED", "SONA_AUTOSTART",
 }
-SECRET_KEYS = {"GROQ_API_KEY", "CEREBRAS_API_KEY", "TAVILY_API_KEY"}
+SECRET_KEYS = {"GROQ_API_KEY", "CEREBRAS_API_KEY", "TAVILY_API_KEY", "HOMEASSISTANT_TOKEN"}
+
+
+def compose_args(*args: str) -> list[str]:
+    config = env_values()
+    base = ["docker", "compose"]
+    if config.get("HA_MCP_ENABLED", "false").lower() == "true" and config.get("HOMEASSISTANT_URL") and config.get("HOMEASSISTANT_TOKEN"):
+        base += ["--profile", "ha-mcp"]
+    return [*base, *args]
 
 
 def env_values() -> dict[str, str]:
@@ -102,7 +111,7 @@ def devices(tool: str) -> list[dict[str, str]]:
 
 def overview() -> dict:
     config = env_values()
-    code, ps = command(["docker", "compose", "ps", "--format", "json"], timeout=20)
+    code, ps = command(compose_args("ps", "--format", "json"), timeout=20)
     online = code == 0 and '"State":"running"' in ps.replace(" ", "")
     all_activities = recent_jsonl(ACTIVITY, 10000)
     activities = all_activities[-100:]
@@ -127,7 +136,8 @@ def overview() -> dict:
         "settings": safe,
         "microphones": devices("arecord"),
         "speakers": devices("aplay"),
-        "wakewords": sorted(p.name for p in (ROOT / "wakewords").glob("*.tflite")),
+        "wakewords": sorted(str(p.relative_to(ROOT)).replace("\\", "/") for p in (ROOT / "wakewords").rglob("*.tflite")),
+        "sounds": sorted(str(p.relative_to(ROOT)).replace("\\", "/") for p in (ROOT / "assets" / "sounds").rglob("*") if p.suffix.lower() in {".wav", ".mp3"}),
         "host": {"name": socket.gethostname(), "uptime": uptime, "disk_free": shutil.disk_usage(ROOT).free},
     }
 
@@ -157,33 +167,50 @@ class Handler(SimpleHTTPRequestHandler):
         if path == "/api/overview":
             self.json_response(overview())
         elif path == "/api/logs":
-            _, output = command(["docker", "compose", "logs", "--tail", "250", "--no-color"], timeout=30)
+            _, output = command(compose_args("logs", "--tail", "250", "--no-color"), timeout=30)
             self.json_response({"logs": output})
         else:
             super().do_GET()
 
     def do_POST(self) -> None:
-        path = urlparse(self.path).path
+        parsed = urlparse(self.path)
+        path = parsed.path
         try:
             if path == "/api/settings":
                 write_env(self.body())
-                code, output = command(["docker", "compose", "up", "-d", "--force-recreate"])
+                code, output = command(compose_args("up", "-d", "--build", "--force-recreate"))
                 self.json_response({"ok": code == 0, "output": output}, 200 if code == 0 else 500)
+            elif path == "/api/upload":
+                query = parse_qs(parsed.query)
+                kind = query.get("kind", [""])[0]
+                filename = Path(query.get("filename", [""])[0]).name
+                suffix = Path(filename).suffix.lower()
+                allowed = {"sound": {".wav", ".mp3"}, "wakeword": {".tflite", ".onnx"}}
+                if kind not in allowed or suffix not in allowed[kind] or not filename:
+                    self.json_response({"error": "Unsupported upload type."}, 400); return
+                length = int(self.headers.get("Content-Length", "0"))
+                if length < 1 or length > 20 * 1024 * 1024:
+                    self.json_response({"error": "File must be between 1 byte and 20 MB."}, 400); return
+                folder = ROOT / ("assets/sounds/uploads" if kind == "sound" else "wakewords/uploads")
+                folder.mkdir(parents=True, exist_ok=True)
+                target = folder / filename
+                target.write_bytes(self.rfile.read(length))
+                self.json_response({"ok": True, "path": str(target.relative_to(ROOT)).replace("\\", "/")})
             elif path == "/api/action/restart":
-                code, output = command(["docker", "compose", "restart"])
+                code, output = command(compose_args("restart"))
                 self.json_response({"ok": code == 0, "output": output}, 200 if code == 0 else 500)
             elif path == "/api/action/start":
-                code, output = command(["docker", "compose", "up", "-d"])
+                code, output = command(compose_args("up", "-d"))
                 self.json_response({"ok": code == 0, "output": output}, 200 if code == 0 else 500)
             elif path == "/api/action/stop":
-                code, output = command(["docker", "compose", "stop"])
+                code, output = command(compose_args("stop"))
                 self.json_response({"ok": code == 0, "output": output}, 200 if code == 0 else 500)
             elif path == "/api/action/speaker-test":
                 code, output = command(["docker", "compose", "run", "--rm", "stt", "python", "-m", "app.speaker_test"], timeout=60)
                 self.json_response({"ok": code == 0, "output": output}, 200 if code == 0 else 500)
             elif path == "/api/action/update":
                 outputs = []
-                for args in (["git", "pull", "--ff-only"], ["docker", "compose", "build", "--pull"], ["docker", "compose", "up", "-d"]):
+                for args in (["git", "pull", "--ff-only"], compose_args("build", "--pull"), compose_args("up", "-d")):
                     code, output = command(list(args))
                     outputs.append(output)
                     if code:

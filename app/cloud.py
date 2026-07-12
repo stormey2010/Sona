@@ -51,10 +51,30 @@ def tavily(name: str, arguments: dict) -> dict:
     return response.json()
 
 
+def home_assistant(name: str, arguments: dict) -> object:
+    base = setting("HOMEASSISTANT_URL").rstrip("/")
+    headers = {"Authorization": f"Bearer {setting('HOMEASSISTANT_TOKEN')}", "Content-Type": "application/json"}
+    if name == "ha_get_state":
+        response = requests.get(f"{base}/api/states/{arguments['entity_id']}", headers=headers, timeout=30)
+    elif name == "ha_search_entities":
+        response = requests.get(f"{base}/api/states", headers=headers, timeout=30)
+        response.raise_for_status()
+        query = arguments["query"].lower()
+        return [x for x in response.json() if query in x.get("entity_id", "").lower() or query in str(x.get("attributes", {}).get("friendly_name", "")).lower()][:25]
+    else:
+        domain, service = arguments["service"].split(".", 1)
+        response = requests.post(f"{base}/api/services/{domain}/{service}", headers=headers, json=arguments.get("data", {}), timeout=30)
+    response.raise_for_status()
+    return response.json()
+
+
 TOOLS = [
     {"type": "function", "function": {"name": "web_search", "description": "Search the web.", "parameters": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}}},
     {"type": "function", "function": {"name": "web_extract", "description": "Extract text from web URLs.", "parameters": {"type": "object", "properties": {"urls": {"type": "array", "items": {"type": "string"}}}, "required": ["urls"]}}},
     {"type": "function", "function": {"name": "web_crawl", "description": "Crawl a web page.", "parameters": {"type": "object", "properties": {"url": {"type": "string"}}, "required": ["url"]}}},
+    {"type": "function", "function": {"name": "ha_search_entities", "description": "Search Home Assistant entities by name or entity ID.", "parameters": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}}},
+    {"type": "function", "function": {"name": "ha_get_state", "description": "Get a Home Assistant entity state.", "parameters": {"type": "object", "properties": {"entity_id": {"type": "string"}}, "required": ["entity_id"]}}},
+    {"type": "function", "function": {"name": "ha_call_service", "description": "Call a Home Assistant service such as light.turn_on. Include entity_id in data.", "parameters": {"type": "object", "properties": {"service": {"type": "string"}, "data": {"type": "object"}}, "required": ["service", "data"]}}},
 ]
 
 
@@ -79,5 +99,6 @@ def ask(prompt: str, history: list[dict[str, str]]) -> tuple[str, dict[str, int]
         for call in calls:
             name = call["function"]["name"]
             arguments = json.loads(call["function"]["arguments"])
-            messages.append({"role": "tool", "tool_call_id": call["id"], "content": json.dumps(tavily(name, arguments))})
+            result = home_assistant(name, arguments) if name.startswith("ha_") else tavily(name, arguments)
+            messages.append({"role": "tool", "tool_call_id": call["id"], "content": json.dumps(result)})
     raise SonaError("The assistant reached its web-tool limit.")

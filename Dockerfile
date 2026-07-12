@@ -9,7 +9,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     STT_MODEL_DIR=/home/app/.cache/huggingface
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends alsa-utils libgomp1 \
+    && apt-get install -y --no-install-recommends alsa-utils mpg123 libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --gid "${APP_GID}" app && useradd --uid "${APP_UID}" --gid app --create-home --shell /usr/sbin/nologin app

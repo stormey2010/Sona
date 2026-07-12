@@ -36,11 +36,24 @@ case "${1:-}" in
   dashboard) echo "http://$(hostname -I | awk '{print $1}'):5054" ;;
   update)
     git pull --ff-only
-    echo "Refreshing microphone and host-permission settings..."
+    ./dashboard/install.sh
+    dashboard_url="http://$(hostname -I | awk '{print $1}'):5054"
+    echo ""
+    echo "Choose how to update Sona:"
+    echo "  1) Terminal setup"
+    echo "  2) Web setup at $dashboard_url"
+    read -r -p "Choose [1/2]: " setup_path
+    if [[ "${setup_path:-1}" == 2 ]]; then
+      echo "Dashboard is ready at $dashboard_url. Save settings there to build and restart Sona."
+      exit 0
+    fi
     ./setup.sh
     run_docker compose build --pull
-    run_docker compose up -d
-    ./dashboard/install.sh ;;
+    if grep -q '^HA_MCP_ENABLED=true' .env && grep -q '^HOMEASSISTANT_URL=.' .env && grep -q '^HOMEASSISTANT_TOKEN=.' .env; then
+      run_docker compose --profile ha-mcp up -d
+    else
+      run_docker compose up -d
+    fi ;;
   *)
     echo "Usage: $0 {setup|api-setup|prompt|assistant|speaker-test|test|interactive|wakeword|wakeword-setup|wakewords|devices|logs|dashboard|start|restart|stop|update}" >&2
     exit 64 ;;

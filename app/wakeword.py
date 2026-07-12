@@ -12,6 +12,7 @@ import numpy as np
 
 from .stt import SonaError, record_until_silence, setting
 from .telemetry import emit
+from .sounds import play_cue
 
 FRAME_SAMPLES = 1280  # 80 ms at 16 kHz, as recommended by openWakeWord.
 
@@ -119,7 +120,10 @@ def listen() -> None:
             process.terminate()
             process.wait(timeout=3)
             from .assistant import respond
-            respond(record_until_silence(noise_floor=noise_floor))
+            play_cue("WAKE_START_SOUND")
+            recording = record_until_silence(noise_floor=noise_floor)
+            play_cue("WAKE_END_SOUND")
+            respond(recording)
             return
     except KeyboardInterrupt:
         print("\nWake-word listener stopped.")
