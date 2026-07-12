@@ -141,9 +141,15 @@ The dashboard intentionally listens on the trusted LAN and has no login yet. Do 
 
 The web setup can build the container on a fresh installation. Choose the microphone, speaker, wake word, listening sounds, and API settings, then press **Save & apply**.
 
+You can also rename the assistant in **Setup & settings**. The chosen name is used by the dashboard, terminal responses, service messages, and built-in system prompt. Renaming the assistant does not retrain the wake-word model; upload or select a matching wake-word model separately.
+
 ### Listening sounds and uploads
 
 Sona plays the included start sound after hearing the wake word and the included end sound when end-of-speech detection stops recording. In **Setup & settings**, select either sound or turn it off. You can upload `.wav`/`.mp3` cue sounds and `.tflite`/`.onnx` OpenWakeWord models from the phone or computer viewing the dashboard. User uploads stay on the Pi and are ignored by Git.
+
+After speaking a complete TTS response, Sona waits three seconds before reopening the wake-word microphone. Adjust **After-speaking cooldown** in the dashboard if the speaker still retriggers the wake word. Increase the wake threshold slightly as a second defense against false triggers; decrease it only when the real wake phrase is being missed.
+
+The built-in system prompt is optimized for spoken answers: quick, direct, plain sentences without numbered lists, parentheses, markdown, or unnecessary detail. It explains the web search, page extraction, crawling, and Home Assistant tools and tells the assistant to verify tool results. Leave the system-prompt box blank to use this built-in prompt, or enter your own replacement.
 
 ### Home Assistant and HA-MCP
 

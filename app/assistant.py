@@ -32,6 +32,7 @@ def save_history(items: list[dict[str, str]]) -> None:
 
 
 def respond(audio=None) -> None:
+    name = os.getenv("ASSISTANT_NAME", "Sona").strip() or "Sona"
     audio = audio or record()
     heard = groq_transcribe(audio)
     print(f'\nYou said:\n"{heard}"')
@@ -43,7 +44,7 @@ def respond(audio=None) -> None:
     assistant_message = {"role": "assistant", "content": reply, "timestamp": now()}
     save_history([*prior, user_message, assistant_message])
     emit("assistant_message", reply, usage=usage)
-    print(f'\nSona:\n"{reply}"')
+    print(f'\n{name}:\n"{reply}"')
     speak(reply)
     emit("tts", "Spoken response completed", voice=os.getenv("GROQ_TTS_VOICE", "autumn"))
 
@@ -52,7 +53,8 @@ def main() -> None:
     try:
         respond()
     except SonaError as exc:
-        print(f"\nSona error: {exc}")
+        name = os.getenv("ASSISTANT_NAME", "Sona").strip() or "Sona"
+        print(f"\n{name} error: {exc}")
         raise SystemExit(1)
 
 

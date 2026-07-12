@@ -11,6 +11,7 @@ set_default STT_UID "$(id -u)"
 set_default STT_GID "$(id -g)"
 set_default AUDIO_GID "${audio_gid:-29}"
 set_default STT_AUDIO_DEVICE "${mic:-default}"
+set_default ASSISTANT_NAME Sona
 set_default TTS_AUDIO_DEVICE "${speaker:-default}"
 set_default STT_BACKEND groq
 set_default STT_LANGUAGE en
@@ -23,6 +24,7 @@ set_default WAKEWORD_MODE preset
 set_default WAKEWORD_PRESET "hey jarvis"
 set_default WAKEWORD_CUSTOM_MODEL wakewords/hey_gideon.tflite
 set_default WAKEWORD_THRESHOLD 0.5
+set_default WAKEWORD_COOLDOWN_SECONDS 3
 set_default WAKE_START_SOUND assets/sounds/start-listening.mp3
 set_default WAKE_END_SOUND assets/sounds/end-listening.wav
 set_default GROQ_API_KEY ""
@@ -31,7 +33,7 @@ set_default GROQ_TTS_MODEL canopylabs/orpheus-v1-english
 set_default GROQ_TTS_VOICE autumn
 set_default CEREBRAS_API_KEY ""
 set_default CEREBRAS_MODEL gpt-oss-120b
-set_default CEREBRAS_SYSTEM_PROMPT "You are Sona, a concise helpful voice assistant."
+set_default CEREBRAS_SYSTEM_PROMPT ""
 set_default TAVILY_API_KEY ""
 set_default HOMEASSISTANT_URL ""
 set_default HOMEASSISTANT_TOKEN ""

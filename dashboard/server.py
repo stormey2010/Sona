@@ -24,12 +24,12 @@ HISTORY = RECORDINGS / "conversation.json"
 PORT = 5054
 
 EDITABLE = {
-    "STT_AUDIO_DEVICE", "TTS_AUDIO_DEVICE", "STT_SILENCE_SECONDS", "STT_MAX_RECORD_SECONDS",
+    "ASSISTANT_NAME", "STT_AUDIO_DEVICE", "TTS_AUDIO_DEVICE", "STT_SILENCE_SECONDS", "STT_MAX_RECORD_SECONDS",
     "STT_SPEECH_THRESHOLD", "STT_NOISE_MULTIPLIER", "STT_LANGUAGE", "STT_RECORD_SECONDS",
     "STT_BACKEND", "GROQ_API_KEY", "GROQ_STT_MODEL", "GROQ_TTS_MODEL", "GROQ_TTS_VOICE",
     "CEREBRAS_API_KEY", "CEREBRAS_MODEL", "CEREBRAS_SYSTEM_PROMPT", "TAVILY_API_KEY", "WAKEWORD_MODE",
     "WAKEWORD_PRESET", "WAKEWORD_CUSTOM_MODEL", "WAKEWORD_THRESHOLD", "WAKE_START_SOUND",
-    "WAKE_END_SOUND", "HOMEASSISTANT_URL", "HOMEASSISTANT_TOKEN", "HA_MCP_ENABLED", "SONA_AUTOSTART",
+    "WAKE_END_SOUND", "WAKEWORD_COOLDOWN_SECONDS", "HOMEASSISTANT_URL", "HOMEASSISTANT_TOKEN", "HA_MCP_ENABLED", "SONA_AUTOSTART",
 }
 SECRET_KEYS = {"GROQ_API_KEY", "CEREBRAS_API_KEY", "TAVILY_API_KEY", "HOMEASSISTANT_TOKEN"}
 
@@ -122,6 +122,8 @@ def overview() -> dict:
         tokens["completion"] += int(usage.get("completion_tokens", 0) or 0)
         tokens["total"] += int(usage.get("total_tokens", 0) or 0)
     safe = {key: value for key, value in config.items() if key in EDITABLE and key not in SECRET_KEYS}
+    if safe.get("CEREBRAS_SYSTEM_PROMPT") == "You are Sona, a concise helpful voice assistant.":
+        safe["CEREBRAS_SYSTEM_PROMPT"] = ""
     safe.update({f"{key}_SAVED": bool(config.get(key)) for key in SECRET_KEYS})
     try:
         uptime = int(float(Path("/proc/uptime").read_text().split()[0]))

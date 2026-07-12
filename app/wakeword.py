@@ -93,7 +93,8 @@ def listen() -> None:
         "arecord", "--device", device, "--format=S16_LE", "--channels=1", "--rate=16000",
         "-t", "raw", "--quiet",
     ]
-    print("Sona Wake Word")
+    assistant_name = setting("ASSISTANT_NAME", "Sona")
+    print(f"{assistant_name} Wake Word")
     print(f"Listening for: {name} (threshold {threshold:g})")
     print("Say the wake word, then speak your command after it. Press Ctrl+C to stop.\n")
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -140,7 +141,8 @@ def main() -> None:
     try:
         listen()
     except SonaError as exc:
-        print(f"\nSona error: {exc}", file=sys.stderr)
+        name = os.getenv("ASSISTANT_NAME", "Sona").strip() or "Sona"
+        print(f"\n{name} error: {exc}", file=sys.stderr)
         raise SystemExit(1)
 
 

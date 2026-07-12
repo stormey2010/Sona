@@ -28,7 +28,11 @@ for i in "${!voices[@]}"; do [[ "${voices[$i]}" == "$current" ]] && default=$((i
 echo "  1) autumn  2) diana  3) hannah  4) austin  5) daniel  6) troy"
 read -r -p "Choose voice [$default]: " choice || choice=""; choice="${choice:-$default}"; [[ "$choice" =~ ^[1-6]$ ]] || { echo "Invalid voice" >&2; exit 1; }; set_value GROQ_TTS_VOICE "${voices[$((choice-1))]}"
 
-screen; echo "${bold}8 / 10  System prompt${reset}"; echo "${dim}Press Enter to keep the current prompt.${reset}"
+screen; echo "${bold}8 / 10  Assistant name${reset}"; echo "${dim}Press Enter to keep the current name.${reset}"
+current_name="$(get ASSISTANT_NAME)"; current_name="${current_name:-Sona}"
+read -r -p "Name [$current_name]: " assistant_name || assistant_name=""; assistant_name="${assistant_name:-$current_name}"
+set_value ASSISTANT_NAME "$assistant_name"
+
+screen; echo "${bold}8 / 10  System prompt${reset}"; echo "${dim}Press Enter to keep the current prompt. Leave the default blank to use the built-in voice-optimized prompt.${reset}"
 read -r -p "> " prompt || prompt=""; [[ -n "$prompt" ]] && set_value CEREBRAS_SYSTEM_PROMPT "$prompt"
-[[ -n "$(get CEREBRAS_SYSTEM_PROMPT)" ]] || set_value CEREBRAS_SYSTEM_PROMPT "You are Sona, a concise helpful voice assistant."
 set_value STT_BACKEND groq; set_value GROQ_STT_MODEL whisper-large-v3-turbo; set_value GROQ_TTS_MODEL canopylabs/orpheus-v1-english; set_value CEREBRAS_MODEL gpt-oss-120b

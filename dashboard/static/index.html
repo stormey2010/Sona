@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#090b12">
-  <title>Sona Control</title>
+  <title>Voice Assistant Control</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <div class="ambient"></div>
   <header>
-    <div class="brand"><div class="orb">S</div><div><strong>Sona</strong><span>Voice control center</span></div></div>
+    <div class="brand"><div class="orb" id="brandOrb">S</div><div><strong id="brandName">Sona</strong><span>Voice control center</span></div></div>
     <div id="connection" class="status"><i></i><span>Connecting</span></div>
   </header>
   <main>
@@ -18,14 +18,14 @@
       <button class="active" data-tab="overview">Overview</button><button data-tab="activity">Activity</button><button data-tab="logs">Logs</button><button data-tab="settings">Setup & settings</button>
     </nav>
     <section id="overview" class="page active">
-      <div class="hero card"><div><p class="eyebrow">VOICE ASSISTANT</p><h1 id="heroTitle">Checking Sona…</h1><p id="heroSubtitle">Loading live state from your Raspberry Pi.</p></div><div class="hero-actions"><button class="primary" onclick="action('restart')">Restart</button><button onclick="action('start')">Start</button><button onclick="action('stop')">Stop</button><button onclick="action('update')">Update</button></div></div>
+      <div class="hero card"><div><p class="eyebrow">VOICE ASSISTANT</p><h1 id="heroTitle">Checking assistant…</h1><p id="heroSubtitle">Loading live state from your Raspberry Pi.</p></div><div class="hero-actions"><button class="primary" onclick="action('restart')">Restart</button><button onclick="action('start')">Start</button><button onclick="action('stop')">Stop</button><button onclick="action('update')">Update</button></div></div>
       <div class="stats"><article class="card"><span>Wake word calls</span><b id="wakeCount">0</b><small>recent activity</small></article><article class="card"><span>Total tokens</span><b id="tokenTotal">0</b><small id="tokenSplit">0 in · 0 out</small></article><article class="card"><span>Conversation</span><b id="messageCount">0</b><small>saved messages</small></article><article class="card"><span>Host uptime</span><b id="uptime">—</b><small id="hostName">Raspberry Pi</small></article></div>
       <div class="grid"><article class="card"><div class="section-title"><h2>Recent activity</h2><button class="text" data-goto="activity">View all</button></div><div id="recentActivity" class="timeline"></div></article><article class="card"><div class="section-title"><h2>Conversation</h2><button class="text" onclick="action('clear-history')">Clear</button></div><div id="conversation" class="conversation"></div></article></div>
     </section>
     <section id="activity" class="page"><div class="card"><div class="section-title"><div><p class="eyebrow">LIVE FEED</p><h2>Assistant activity</h2></div><button onclick="refresh()">Refresh</button></div><div id="allActivity" class="timeline roomy"></div></div></section>
     <section id="logs" class="page"><div class="card logs-card"><div class="section-title"><div><p class="eyebrow">DOCKER</p><h2>Service logs</h2></div><button onclick="loadLogs()">Refresh logs</button></div><pre id="logOutput">Loading logs…</pre></div></section>
     <section id="settings" class="page"><form id="settingsForm" class="card settings"><div class="section-title"><div><p class="eyebrow">GUIDED CONTROL</p><h2>Setup & settings</h2><p>Blank API key fields keep the saved key.</p></div><div><button type="button" onclick="action('speaker-test')">Test speaker</button> <button class="primary" type="submit">Save & apply</button></div></div><div class="form-grid">
-      <label>Microphone<select name="STT_AUDIO_DEVICE" id="microphone"></select></label><label>Speaker<select name="TTS_AUDIO_DEVICE" id="speaker"></select></label>
+      <label>Assistant name<input name="ASSISTANT_NAME" maxlength="40" placeholder="Sona"></label><label>Microphone<select name="STT_AUDIO_DEVICE" id="microphone"></select></label><label>Speaker<select name="TTS_AUDIO_DEVICE" id="speaker"></select></label>
       <label>Silence before stop (seconds)<input name="STT_SILENCE_SECONDS" type="number" min="0.2" max="10" step="0.1"></label><label>Noise rejection<select name="STT_NOISE_MULTIPLIER"><option value="1.5">Sensitive</option><option value="2.0">Normal</option><option value="3.0">Strong</option></select></label>
       <label>Maximum recording seconds<input name="STT_MAX_RECORD_SECONDS" type="number" min="5" max="120" step="1"></label><label>Speech floor threshold<input name="STT_SPEECH_THRESHOLD" type="number" min="1" max="5000" step="1"></label>
       <label>Language<input name="STT_LANGUAGE" placeholder="en"></label><label>Basic test seconds<input name="STT_RECORD_SECONDS" type="number" min="1" max="60" step="1"></label>
@@ -33,9 +33,9 @@
       <label>Built-in wake word<select name="WAKEWORD_PRESET"><option>alexa</option><option>hey jarvis</option><option>hey mycroft</option><option>hey rhasspy</option><option>weather</option><option>timer</option></select></label><label>Custom wake model<select name="WAKEWORD_CUSTOM_MODEL" id="wakewordModel"></select></label>
       <label>Upload wake-word model<input id="wakeUpload" type="file" accept=".tflite,.onnx"><button type="button" onclick="uploadFile('wakeword','wakeUpload')">Upload model</button></label><label>Wake detected sound<select name="WAKE_START_SOUND" id="startSound"></select></label>
       <label>Finished listening sound<select name="WAKE_END_SOUND" id="endSound"></select></label><label>Upload listening sound<input id="soundUpload" type="file" accept=".wav,.mp3"><button type="button" onclick="uploadFile('sound','soundUpload')">Upload sound</button></label>
-      <label>Wake threshold<input name="WAKEWORD_THRESHOLD" type="number" min="0.05" max="1" step="0.05"></label><label>Start after reboot<select name="SONA_AUTOSTART"><option value="true">On</option><option value="false">Off</option></select></label>
+      <label>Wake threshold<input name="WAKEWORD_THRESHOLD" type="number" min="0.05" max="1" step="0.05"></label><label>After-speaking cooldown (seconds)<input name="WAKEWORD_COOLDOWN_SECONDS" type="number" min="0" max="15" step="0.5"></label><label>Start after reboot<select name="SONA_AUTOSTART"><option value="true">On</option><option value="false">Off</option></select></label>
       <label>Groq STT model<input name="GROQ_STT_MODEL"></label><label>Groq TTS model<input name="GROQ_TTS_MODEL"></label><label>Cerebras model<input name="CEREBRAS_MODEL"></label><label>STT backend<select name="STT_BACKEND"><option value="groq">Groq cloud</option><option value="local">Local Whisper</option></select></label>
-      <label class="wide">System prompt<textarea name="CEREBRAS_SYSTEM_PROMPT" rows="4"></textarea></label>
+      <label class="wide">System prompt<textarea name="CEREBRAS_SYSTEM_PROMPT" rows="5" placeholder="Blank uses the built-in voice-optimized prompt with web and Home Assistant tool instructions."></textarea></label>
       <label>Home Assistant URL<input name="HOMEASSISTANT_URL" placeholder="http://homeassistant.local:8123"></label><label>Home Assistant tools<select name="HA_MCP_ENABLED"><option value="false">Off</option><option value="true">On — start HA-MCP</option></select></label>
       <label>Home Assistant long-lived token <em id="haState"></em><input name="HOMEASSISTANT_TOKEN" autocomplete="off" placeholder="Leave blank to keep saved"></label>
       <label>Groq API key <em id="groqState"></em><input name="GROQ_API_KEY" autocomplete="off" placeholder="Leave blank to keep saved"></label><label>Cerebras API key <em id="cerebrasState"></em><input name="CEREBRAS_API_KEY" autocomplete="off" placeholder="Leave blank to keep saved"></label><label>Tavily API key <em id="tavilyState"></em><input name="TAVILY_API_KEY" autocomplete="off" placeholder="Leave blank to keep saved"></label>

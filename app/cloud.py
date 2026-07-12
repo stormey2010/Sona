@@ -10,6 +10,16 @@ import requests
 
 from .stt import SonaError, recording_path, setting
 
+DEFAULT_SYSTEM_PROMPT = (
+    "You are {name}, a fast, capable voice assistant. Answer naturally, briefly, and get straight to the point. "
+    "Your response will be spoken aloud, so use short plain sentences. Avoid numbered lists, bullet lists, parentheses, "
+    "markdown, unnecessary headings, and long explanations unless the user asks for detail. You have web_search for "
+    "current information, web_extract for reading specific pages, and web_crawl for exploring a site. You also have "
+    "Home Assistant tools: ha_search_entities finds entity IDs, ha_get_state checks an entity, and ha_call_service "
+    "controls devices. Search for the entity before controlling it when its exact ID is unknown. Use tools when they "
+    "help, never claim a tool succeeded unless its result confirms success, and be a friendly, reliable assistant."
+)
+
 
 def groq_transcribe(path: Path) -> str:
     try:
@@ -33,7 +43,7 @@ def speak(text: str) -> Path:
         target = recording_path().with_name(recording_path().stem + "-speech.wav")
         response = Groq(api_key=setting("GROQ_API_KEY")).audio.speech.create(
             model=setting("GROQ_TTS_MODEL", "canopylabs/orpheus-v1-english"),
-            voice=setting("GROQ_TTS_VOICE", "autumn"), input=text[:200], response_format="wav",
+            voice=setting("GROQ_TTS_VOICE", "autumn"), input=text, response_format="wav",
         )
         response.write_to_file(str(target))
         device = os.getenv("TTS_AUDIO_DEVICE") or "default"
@@ -80,7 +90,11 @@ TOOLS = [
 
 def ask(prompt: str, history: list[dict[str, str]]) -> tuple[str, dict[str, int]]:
     clean_history = [{"role": item["role"], "content": item["content"]} for item in history]
-    messages = [{"role": "system", "content": setting("CEREBRAS_SYSTEM_PROMPT", "You are Sona, a concise helpful voice assistant.")}, *clean_history, {"role": "user", "content": prompt}]
+    name = setting("ASSISTANT_NAME", "Sona")
+    saved_prompt = os.getenv("CEREBRAS_SYSTEM_PROMPT", "").strip()
+    if not saved_prompt or saved_prompt == "You are Sona, a concise helpful voice assistant.":
+        saved_prompt = DEFAULT_SYSTEM_PROMPT.format(name=name)
+    messages = [{"role": "system", "content": saved_prompt}, *clean_history, {"role": "user", "content": prompt}]
     headers = {"Authorization": f"Bearer {setting('CEREBRAS_API_KEY')}", "Content-Type": "application/json"}
     totals = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
     for _ in range(4):
