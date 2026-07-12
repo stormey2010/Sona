@@ -241,7 +241,7 @@ git pull --ff-only
 
 The last line prints the exact dashboard address, such as `http://192.168.1.50:5054`. Open it from another device on the same network, complete **Setup & settings**, and press **Save & apply**. No host Python installation or systemd dashboard service is used by this method.
 
-On a new installation, the dashboard automatically opens a seven-screen guided setup. It explains and configures the assistant name, microphone and speaker, end-of-speech behavior, wake word and sounds, Groq/Cerebras/Tavily services, optional Home Assistant access, and start-after-reboot behavior. The final screen reviews the important choices before building the voice container. Close the wizard to use the dashboard without finishing, or reopen it any time with **Guided setup** in the header or **Run guided setup** under full settings.
+When required configuration is missing, the dashboard automatically redirects to Sona's dedicated setup area. Every category has its own URL and explanation, including `/setup/audio`, `/setup/listening`, `/setup/wakeword`, `/setup/sounds`, `/setup/ai`, `/setup/assistant`, and `/setup/home-assistant`. Each Continue saves that category without rebuilding Docker. The final `/setup/review` page shows missing requirements and builds the voice container only after setup is complete. Once all required settings are saved, normal visits remain on the dashboard. Reopen setup any time with **Guided setup**.
 
 Check the installer at any time with:
 

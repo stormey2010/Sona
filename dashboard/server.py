@@ -132,6 +132,21 @@ def overview() -> dict:
     if safe.get("CEREBRAS_SYSTEM_PROMPT") == "You are Sona, a concise helpful voice assistant.":
         safe["CEREBRAS_SYSTEM_PROMPT"] = ""
     safe.update({f"{key}_SAVED": bool(config.get(key)) for key in SECRET_KEYS})
+    required = {
+        "assistant name": bool(config.get("ASSISTANT_NAME")),
+        "microphone": bool(config.get("STT_AUDIO_DEVICE")),
+        "listening silence": bool(config.get("STT_SILENCE_SECONDS")),
+        "wake-word mode": bool(config.get("WAKEWORD_MODE")),
+        "wake threshold": bool(config.get("WAKEWORD_THRESHOLD")),
+        "voice": bool(config.get("GROQ_TTS_VOICE")),
+        "Groq API key": bool(config.get("GROQ_API_KEY")),
+        "Cerebras API key": bool(config.get("CEREBRAS_API_KEY")),
+        "autostart choice": config.get("SONA_AUTOSTART", "") in {"true", "false"},
+    }
+    if config.get("WAKEWORD_MODE") == "custom":
+        required["custom wake-word model"] = bool(config.get("WAKEWORD_CUSTOM_MODEL"))
+    if config.get("WAKEWORD_MODE") == "preset":
+        required["preset wake word"] = bool(config.get("WAKEWORD_PRESET"))
     try:
         uptime = int(float(Path("/proc/uptime").read_text().split()[0]))
     except (OSError, ValueError):
@@ -143,6 +158,7 @@ def overview() -> dict:
         "history": history()[::-1],
         "tokens": tokens,
         "settings": safe,
+        "setup": {"complete": all(required.values()), "missing": [name for name, ready in required.items() if not ready]},
         "microphones": devices("arecord"),
         "speakers": devices("aplay"),
         "wakewords": sorted(str(p.relative_to(ROOT)).replace("\\", "/") for p in (ROOT / "wakewords").rglob("*.tflite")),
@@ -178,6 +194,9 @@ class Handler(SimpleHTTPRequestHandler):
         elif path == "/api/logs":
             _, output = command(compose_args("logs", "--tail", "250", "--no-color"), timeout=30)
             self.json_response({"logs": output})
+        elif path == "/setup" or (path.startswith("/setup/") and not Path(path).suffix):
+            self.path = "/setup/index.html"
+            super().do_GET()
         else:
             super().do_GET()
 
@@ -189,6 +208,9 @@ class Handler(SimpleHTTPRequestHandler):
                 write_env(self.body())
                 code, output = command(compose_args("up", "-d", "--build", "--force-recreate"))
                 self.json_response({"ok": code == 0, "output": output}, 200 if code == 0 else 500)
+            elif path == "/api/settings/save":
+                write_env(self.body())
+                self.json_response({"ok": True})
             elif path == "/api/upload":
                 query = parse_qs(parsed.query)
                 kind = query.get("kind", [""])[0]
