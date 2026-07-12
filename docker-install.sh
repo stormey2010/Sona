@@ -43,6 +43,10 @@ export HOST_UID="$(id -u)"
 export HOST_GID="$(id -g)"
 export HOST_AUDIO_GID="$(getent group audio | cut -d: -f3 || echo 29)"
 mkdir -p recordings wakewords/uploads assets/sounds/uploads
+if command -v systemctl >/dev/null 2>&1 && sudo systemctl is-active --quiet sona-dashboard.service; then
+  echo "Switching port 5054 from the older systemd dashboard to the Docker dashboard..."
+  sudo systemctl disable --now sona-dashboard.service
+fi
 echo "Checking Docker Hub access..."
 "${DOCKER[@]}" pull --quiet docker:29-cli >/dev/null || {
   echo "Docker Hub is still unreachable. Check the Pi's internet connection, then rerun ./docker-install.sh." >&2
