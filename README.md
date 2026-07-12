@@ -159,7 +159,70 @@ The **Wake threshold** field is editable in web settings from `0.05` through `1.
 
 This alternative keeps both setup and the voice assistant in Docker. The first container is the `sona-install:local` image: it serves the setup dashboard on port `5054`, detects `/dev/snd`, writes the project `.env`, and controls the host Docker engine through its socket. After **Save & apply**, it builds and starts the normal `sona-stt:local` voice image.
 
-Install Docker Engine and the Compose plugin, then run:
+### Step 1: check whether Docker is already installed
+
+Run:
+
+```bash
+docker --version
+docker compose version
+```
+
+If both commands print versions, skip to Step 3. If either says `command not found`, install Docker below.
+
+### Step 2: install Docker on Raspberry Pi OS 64-bit
+
+These commands use Docker's official Debian repository, which supports ARM64 and current 64-bit Raspberry Pi OS releases including Trixie. Run them one block at a time:
+
+```bash
+sudo apt update
+sudo apt install -y ca-certificates curl git
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+```
+
+Add Docker's package repository:
+
+```bash
+sudo tee /etc/apt/sources.list.d/docker.sources >/dev/null <<EOF
+Types: deb
+URIs: https://download.docker.com/linux/debian
+Suites: $(. /etc/os-release && echo "$VERSION_CODENAME")
+Components: stable
+Architectures: $(dpkg --print-architecture)
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+sudo apt update
+```
+
+Install Docker Engine, Buildx, and the Docker Compose plugin:
+
+```bash
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo systemctl enable --now docker
+sudo usermod -aG docker "$USER"
+```
+
+If APT reports conflicts with an older distribution-provided Docker installation, remove only those conflicting packages and repeat the install command:
+
+```bash
+sudo apt remove docker.io docker-compose docker-doc podman-docker containerd runc
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+
+This package removal does not automatically delete existing Docker images or volumes, but review the APT confirmation before accepting it.
+
+Verify the installation:
+
+```bash
+sudo docker run --rm hello-world
+sudo docker compose version
+```
+
+Docker-group access normally becomes active after logging out and back in. Sona's installer automatically uses `sudo docker` during the current session if necessary, so you can continue immediately.
+
+### Step 3: download and start Sona's Docker installer
 
 ```bash
 git clone https://github.com/stormey2010/Sona.git sona-stt
@@ -168,7 +231,22 @@ chmod +x docker-install.sh
 ./docker-install.sh
 ```
 
-The last line prints the exact dashboard address. Open it from another device on the same network, complete **Setup & settings**, and press **Save & apply**. No host Python installation or systemd dashboard service is used by this method.
+If the repository was already downloaded, update it instead:
+
+```bash
+cd ~/sona-stt
+git pull --ff-only
+./docker-install.sh
+```
+
+The last line prints the exact dashboard address, such as `http://192.168.1.50:5054`. Open it from another device on the same network, complete **Setup & settings**, and press **Save & apply**. No host Python installation or systemd dashboard service is used by this method.
+
+Check the installer at any time with:
+
+```bash
+sudo docker ps --filter name=sona-install
+sudo docker logs --tail 100 sona-install
+```
 
 The dashboard's **Update** button pulls the repository, rebuilds and restarts `sona-stt:local`, then rebuilds and replaces `sona-install:local` so both Docker images receive updates. The page may disconnect briefly while its own dashboard container is replaced; refresh it after about ten seconds.
 
