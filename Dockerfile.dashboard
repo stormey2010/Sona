@@ -1,0 +1,7 @@
+FROM docker:29-cli
+
+RUN apk add --no-cache python3 bash git curl alsa-utils \
+    && git config --system --add safe.directory /workspace
+WORKDIR /workspace
+EXPOSE 5054
+CMD ["bash", "-c", "./dashboard/bootstrap.sh && exec python3 dashboard/server.py"]

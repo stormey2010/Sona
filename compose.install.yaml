@@ -1,0 +1,22 @@
+services:
+  installer:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    image: sona-install:local
+    container_name: sona-install
+    restart: unless-stopped
+    working_dir: /workspace
+    environment:
+      DASHBOARD_DOCKER_MODE: "true"
+      SONA_HOST_DIR: "${SONA_HOST_DIR:?Set SONA_HOST_DIR to the absolute Sona folder}"
+      HOST_UID: "${HOST_UID:-1000}"
+      HOST_GID: "${HOST_GID:-1000}"
+      HOST_AUDIO_GID: "${HOST_AUDIO_GID:-29}"
+    ports:
+      - "5054:5054"
+    devices:
+      - /dev/snd:/dev/snd
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${SONA_HOST_DIR:?Set SONA_HOST_DIR to the absolute Sona folder}:/workspace

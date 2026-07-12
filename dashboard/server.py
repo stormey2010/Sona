@@ -29,7 +29,7 @@ EDITABLE = {
     "STT_BACKEND", "GROQ_API_KEY", "GROQ_STT_MODEL", "GROQ_TTS_MODEL", "GROQ_TTS_VOICE",
     "CEREBRAS_API_KEY", "CEREBRAS_MODEL", "CEREBRAS_SYSTEM_PROMPT", "TAVILY_API_KEY", "WAKEWORD_MODE",
     "WAKEWORD_PRESET", "WAKEWORD_CUSTOM_MODEL", "WAKEWORD_THRESHOLD", "WAKE_START_SOUND",
-    "WAKE_END_SOUND", "WAKEWORD_COOLDOWN_SECONDS", "HOMEASSISTANT_URL", "HOMEASSISTANT_TOKEN", "HA_MCP_ENABLED", "SONA_AUTOSTART",
+    "WAKE_END_SOUND", "TOOL_CALL_SOUND", "WAKEWORD_COOLDOWN_SECONDS", "HOMEASSISTANT_URL", "HOMEASSISTANT_TOKEN", "HA_MCP_ENABLED", "SONA_AUTOSTART",
 }
 SECRET_KEYS = {"GROQ_API_KEY", "CEREBRAS_API_KEY", "TAVILY_API_KEY", "HOMEASSISTANT_TOKEN"}
 
@@ -74,6 +74,13 @@ def command(args: list[str], timeout: int = 600) -> tuple[int, str]:
         return 127, str(exc)
     except subprocess.TimeoutExpired:
         return 124, f"Command timed out after {timeout} seconds"
+
+
+def refresh_dashboard() -> None:
+    if os.getenv("DASHBOARD_DOCKER_MODE", "false").lower() == "true":
+        command(["docker", "compose", "-f", "compose.install.yaml", "up", "-d", "--build", "--force-recreate", "installer"])
+    else:
+        os._exit(0)
 
 
 def recent_jsonl(path: Path, limit: int = 100) -> list[dict]:
@@ -219,7 +226,7 @@ class Handler(SimpleHTTPRequestHandler):
                         self.json_response({"ok": False, "output": "\n".join(outputs)}, 500)
                         return
                 self.json_response({"ok": True, "output": "\n".join(outputs)})
-                threading.Timer(1.0, lambda: os._exit(0)).start()
+                threading.Timer(1.0, refresh_dashboard).start()
             elif path == "/api/action/clear-history":
                 HISTORY.unlink(missing_ok=True)
                 self.json_response({"ok": True})

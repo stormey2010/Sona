@@ -151,6 +151,29 @@ After speaking a complete TTS response, Sona waits three seconds before reopenin
 
 The built-in system prompt is optimized for spoken answers: quick, direct, plain sentences without numbered lists, parentheses, markdown, or unnecessary detail. It explains the web search, page extraction, crawling, and Home Assistant tools and tells the assistant to verify tool results. Leave the system-prompt box blank to use this built-in prompt, or enter your own replacement.
 
+The included `tool-call-notification.wav` plays immediately before the assistant performs a web search, extracts or crawls a page, checks Home Assistant, or controls a Home Assistant device. Select a different sound or turn it off with **Tool-call sound** in the dashboard. Tool calls also appear in the activity feed.
+
+The **Wake threshold** field is editable in web settings from `0.05` through `1.0`. Higher values reduce accidental wake-ups; lower values make the real phrase easier to trigger but increase false detections. Start around `0.5`, then adjust in steps of `0.05`.
+
+## Fully Docker-based installation
+
+This alternative keeps both setup and the voice assistant in Docker. The first container is the `sona-install:local` image: it serves the setup dashboard on port `5054`, detects `/dev/snd`, writes the project `.env`, and controls the host Docker engine through its socket. After **Save & apply**, it builds and starts the normal `sona-stt:local` voice image.
+
+Install Docker Engine and the Compose plugin, then run:
+
+```bash
+git clone https://github.com/stormey2010/Sona.git sona-stt
+cd sona-stt
+chmod +x docker-install.sh
+./docker-install.sh
+```
+
+The last line prints the exact dashboard address. Open it from another device on the same network, complete **Setup & settings**, and press **Save & apply**. No host Python installation or systemd dashboard service is used by this method.
+
+The dashboard's **Update** button pulls the repository, rebuilds and restarts `sona-stt:local`, then rebuilds and replaces `sona-install:local` so both Docker images receive updates. The page may disconnect briefly while its own dashboard container is replaced; refresh it after about ten seconds.
+
+The Docker installer mounts `/var/run/docker.sock`, which gives the dashboard full control of Docker on that Pi. Keep port `5054` restricted to a trusted LAN and never expose it to the public internet.
+
 ### Home Assistant and HA-MCP
 
 In Home Assistant, open your profile and create a **Long-Lived Access Token**. In Sona's web settings, enter the Home Assistant URL (for example `http://192.168.1.20:8123`), paste the token, and set **Home Assistant tools** to on. Saving starts the official HA-MCP container and gives Sona focused tools for entity search, state lookup, and service calls. The saved token stays in the ignored `.env` file and is not returned to the browser.

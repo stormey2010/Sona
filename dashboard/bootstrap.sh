@@ -7,9 +7,9 @@ set_default() { grep -q "^$1=" .env 2>/dev/null || printf '%s=%s\n' "$1" "$2" >>
 audio_gid="$(getent group audio | cut -d: -f3 || true)"
 mic="$(arecord -l 2>/dev/null | sed -n 's/^card [0-9]*: \([^ ]*\).*device \([0-9]*\):.*/plughw:CARD=\1,DEV=\2/p' | head -1)"
 speaker="$(aplay -l 2>/dev/null | sed -n 's/^card [0-9]*: \([^ ]*\).*device \([0-9]*\):.*/plughw:CARD=\1,DEV=\2/p' | head -1)"
-set_default STT_UID "$(id -u)"
-set_default STT_GID "$(id -g)"
-set_default AUDIO_GID "${audio_gid:-29}"
+set_default STT_UID "${HOST_UID:-$(id -u)}"
+set_default STT_GID "${HOST_GID:-$(id -g)}"
+set_default AUDIO_GID "${HOST_AUDIO_GID:-${audio_gid:-29}}"
 set_default STT_AUDIO_DEVICE "${mic:-default}"
 set_default ASSISTANT_NAME Sona
 set_default TTS_AUDIO_DEVICE "${speaker:-default}"
@@ -27,6 +27,7 @@ set_default WAKEWORD_THRESHOLD 0.5
 set_default WAKEWORD_COOLDOWN_SECONDS 3
 set_default WAKE_START_SOUND assets/sounds/start-listening.mp3
 set_default WAKE_END_SOUND assets/sounds/end-listening.wav
+set_default TOOL_CALL_SOUND assets/sounds/tool-call-notification.wav
 set_default GROQ_API_KEY ""
 set_default GROQ_STT_MODEL whisper-large-v3-turbo
 set_default GROQ_TTS_MODEL canopylabs/orpheus-v1-english

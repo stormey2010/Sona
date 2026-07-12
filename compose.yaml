@@ -21,9 +21,9 @@ services:
     volumes:
       - whisper-models:/home/app/.cache/huggingface
       - wakeword-models:/home/app/.cache/openwakeword
-      - ./recordings:/app/recordings
-      - ./wakewords:/app/wakewords:ro
-      - ./assets:/app/assets:ro
+      - ${SONA_HOST_DIR:-.}/recordings:/app/recordings
+      - ${SONA_HOST_DIR:-.}/wakewords:/app/wakewords:ro
+      - ${SONA_HOST_DIR:-.}/assets:/app/assets:ro
 
   ha-mcp:
     image: ghcr.io/homeassistant-ai/ha-mcp:latest

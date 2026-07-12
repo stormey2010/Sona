@@ -9,6 +9,8 @@ from pathlib import Path
 import requests
 
 from .stt import SonaError, recording_path, setting
+from .sounds import play_cue
+from .telemetry import emit
 
 DEFAULT_SYSTEM_PROMPT = (
     "You are {name}, a fast, capable voice assistant. Answer naturally, briefly, and get straight to the point. "
@@ -113,6 +115,8 @@ def ask(prompt: str, history: list[dict[str, str]]) -> tuple[str, dict[str, int]
         for call in calls:
             name = call["function"]["name"]
             arguments = json.loads(call["function"]["arguments"])
+            emit("tool_call", f"Using tool: {name}", tool=name)
+            play_cue("TOOL_CALL_SOUND")
             result = home_assistant(name, arguments) if name.startswith("ha_") else tavily(name, arguments)
             messages.append({"role": "tool", "tool_call_id": call["id"], "content": json.dumps(result)})
     raise SonaError("The assistant reached its web-tool limit.")
