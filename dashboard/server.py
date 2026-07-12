@@ -17,7 +17,7 @@ from urllib.parse import parse_qs, urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
 STATIC = Path(__file__).resolve().parent / "static"
-ENV_PATH = ROOT / ".env"
+ENV_PATH = Path(os.getenv("SONA_ENV_PATH", str(ROOT / ".env")))
 RECORDINGS = ROOT / "recordings"
 ACTIVITY = RECORDINGS / "activity.jsonl"
 HISTORY = RECORDINGS / "conversation.json"
@@ -137,7 +137,6 @@ def overview() -> dict:
         "microphone": bool(config.get("STT_AUDIO_DEVICE")),
         "listening silence": bool(config.get("STT_SILENCE_SECONDS")),
         "wake-word mode": bool(config.get("WAKEWORD_MODE")),
-        "wake threshold": bool(config.get("WAKEWORD_THRESHOLD")),
         "voice": bool(config.get("GROQ_TTS_VOICE")),
         "Groq API key": bool(config.get("GROQ_API_KEY")),
         "Cerebras API key": bool(config.get("CEREBRAS_API_KEY")),
@@ -145,8 +144,10 @@ def overview() -> dict:
     }
     if config.get("WAKEWORD_MODE") == "custom":
         required["custom wake-word model"] = bool(config.get("WAKEWORD_CUSTOM_MODEL"))
+        required["wake threshold"] = bool(config.get("WAKEWORD_THRESHOLD"))
     if config.get("WAKEWORD_MODE") == "preset":
         required["preset wake word"] = bool(config.get("WAKEWORD_PRESET"))
+        required["wake threshold"] = bool(config.get("WAKEWORD_THRESHOLD"))
     try:
         uptime = int(float(Path("/proc/uptime").read_text().split()[0]))
     except (OSError, ValueError):
@@ -173,6 +174,10 @@ class Handler(SimpleHTTPRequestHandler):
 
     def log_message(self, format: str, *args) -> None:
         pass
+
+    def end_headers(self) -> None:
+        self.send_header("Cache-Control", "no-store")
+        super().end_headers()
 
     def json_response(self, payload: object, status: int = 200) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode()
@@ -244,6 +249,35 @@ class Handler(SimpleHTTPRequestHandler):
                 args += ["stt", "python", "-m", "app.speaker_test"]
                 code, output = command(args, timeout=60)
                 self.json_response({"ok": code == 0, "output": output}, 200 if code == 0 else 500)
+            elif path == "/api/action/microphone-test":
+                request = self.body()
+                microphone = str(request.get("microphone") or env_values().get("STT_AUDIO_DEVICE") or "default")
+                speaker = str(request.get("speaker") or env_values().get("TTS_AUDIO_DEVICE") or "default")
+                RECORDINGS.mkdir(exist_ok=True)
+                sample = RECORDINGS / "microphone-test.wav"
+                _, running = command(compose_args("ps", "--status", "running", "-q", "stt"), timeout=20)
+                was_running = bool(running.strip())
+                if was_running:
+                    command(compose_args("stop", "stt"), timeout=60)
+                try:
+                    code, recorded = command(["arecord", "--device", microphone, "--format=S16_LE", "--channels=1", "--rate=16000", "--duration=3", str(sample)], timeout=15)
+                    if code:
+                        self.json_response({"ok": False, "output": recorded or "Microphone recording failed."}, 500); return
+                    code, played = command(["aplay", "--device", speaker, str(sample)], timeout=15)
+                    output = "Recorded three seconds and played them back." if code == 0 else played
+                    self.json_response({"ok": code == 0, "output": output}, 200 if code == 0 else 500)
+                finally:
+                    if was_running:
+                        command(compose_args("up", "-d", "stt"), timeout=120)
+            elif path == "/api/action/voice-preview":
+                request = self.body()
+                voice = str(request.get("voice", ""))
+                speaker = str(request.get("speaker") or env_values().get("TTS_AUDIO_DEVICE") or "default")
+                if voice not in {"autumn", "diana", "hannah", "austin", "daniel", "troy"}:
+                    self.json_response({"error": "Unknown voice preview."}, 400); return
+                sample = ROOT / "assets" / "voices" / f"{voice}.wav"
+                code, output = command(["aplay", "--device", speaker, str(sample)], timeout=20)
+                self.json_response({"ok": code == 0, "output": output or f"Played {voice}."}, 200 if code == 0 else 500)
             elif path == "/api/action/update":
                 outputs = []
                 for args in (["git", "pull", "--ff-only"], compose_args("build", "--pull"), compose_args("up", "-d")):

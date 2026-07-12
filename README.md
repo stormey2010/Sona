@@ -243,6 +243,8 @@ The last line prints the exact dashboard address, such as `http://192.168.1.50:5
 
 When required configuration is missing, the dashboard automatically redirects to Sona's dedicated setup area. Every category has its own URL and explanation, including `/setup/audio`, `/setup/listening`, `/setup/wakeword`, `/setup/sounds`, `/setup/ai`, `/setup/assistant`, and `/setup/home-assistant`. Each Continue saves that category without rebuilding Docker. The final `/setup/review` page shows missing requirements and builds the voice container only after setup is complete. Once all required settings are saved, normal visits remain on the dashboard. Reopen setup any time with **Guided setup**.
 
+The Audio page includes a three-second microphone record-and-playback test plus a speaker tone test. The Voice & AI page includes local samples for Autumn, Diana, Hannah, Austin, Daniel, and Troy and plays the selected preview through the configured Pi speaker. The Wake Word page first asks for Built-in, Custom, or Off mode and hides settings that do not apply to the selected mode.
+
 Check the installer at any time with:
 
 ```bash
