@@ -48,7 +48,7 @@ echo "Checking Docker Hub access..."
   echo "Docker Hub is still unreachable. Check the Pi's internet connection, then rerun ./docker-install.sh." >&2
   exit 1
 }
-"${DOCKER[@]}" compose -f compose.install.yaml up -d --build
+"${DOCKER[@]}" compose -f compose.install.yaml up -d --build --force-recreate
 ip="$(hostname -I | awk '{print $1}')"
 echo "Sona installer dashboard: http://${ip:-localhost}:5054"
 echo "Open Setup & settings, complete the form, then choose Save & apply."
