@@ -215,7 +215,12 @@ class Handler(SimpleHTTPRequestHandler):
                 code, output = command(compose_args("stop"))
                 self.json_response({"ok": code == 0, "output": output}, 200 if code == 0 else 500)
             elif path == "/api/action/speaker-test":
-                code, output = command(["docker", "compose", "run", "--rm", "stt", "python", "-m", "app.speaker_test"], timeout=60)
+                requested = self.body().get("device", "")
+                args = ["docker", "compose", "run", "--rm"]
+                if requested:
+                    args += ["-e", f"TTS_AUDIO_DEVICE={requested}"]
+                args += ["stt", "python", "-m", "app.speaker_test"]
+                code, output = command(args, timeout=60)
                 self.json_response({"ok": code == 0, "output": output}, 200 if code == 0 else 500)
             elif path == "/api/action/update":
                 outputs = []
