@@ -248,6 +248,8 @@ sudo docker ps --filter name=sona-install
 sudo docker logs --tail 100 sona-install
 ```
 
+If Docker reports an unreachable IPv6 address while contacting `auth.docker.io`, rerun `./docker-install.sh`. The installer now configures Docker's resolver to prefer a working IPv4 route for dual-stack Docker Hub names, restarts Docker, and verifies that `docker:29-cli` can be pulled before starting the build. It does not disable IPv6 for the rest of the Pi.
+
 The dashboard's **Update** button pulls the repository, rebuilds and restarts `sona-stt:local`, then rebuilds and replaces `sona-install:local` so both Docker images receive updates. The page may disconnect briefly while its own dashboard container is replaced; refresh it after about ten seconds.
 
 The Docker installer mounts `/var/run/docker.sock`, which gives the dashboard full control of Docker on that Pi. Keep port `5054` restricted to a trusted LAN and never expose it to the public internet.
